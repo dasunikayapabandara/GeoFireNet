@@ -5,8 +5,8 @@ MODEL_PATH = "model.pkl"
 
 def get_risk_level(score):
     if score < 30: return "Low", "Normal"
-    if score < 60: return "Moderate", "Caution"
-    if score < 85: return "High", "Warning"
+    if score < 50: return "Moderate", "Caution"
+    if score < 80: return "High", "Warning"
     return "Extreme", "Evacuate"
 
 def predict_risk(temp, hum, wind, veg):

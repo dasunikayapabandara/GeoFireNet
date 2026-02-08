@@ -3,26 +3,26 @@
     "test_samples": 500,
     "trained_model_metrics": {
         "confusion_matrix": {
-            "TP": 70,
-            "TN": 417,
-            "FP": 6,
-            "FN": 7
+            "TP": 136,
+            "TN": 348,
+            "FP": 12,
+            "FN": 4
         },
-        "accuracy": 0.974,
-        "precision": 0.9210526315789473,
-        "recall": 0.9090909090909091,
-        "f1_score": 0.915032679738562
+        "accuracy": 0.968,
+        "precision": 0.918918918918919,
+        "recall": 0.9714285714285714,
+        "f1_score": 0.9444444444444445
     },
     "heuristic_baseline_metrics": {
         "confusion_matrix": {
-            "TP": 64,
-            "TN": 423,
+            "TP": 134,
+            "TN": 360,
             "FP": 0,
-            "FN": 13
+            "FN": 6
         },
-        "accuracy": 0.974,
+        "accuracy": 0.988,
         "precision": 1.0,
-        "recall": 0.8311688311688312,
-        "f1_score": 0.9078014184397163
+        "recall": 0.9571428571428572,
+        "f1_score": 0.9781021897810218
     }
 }

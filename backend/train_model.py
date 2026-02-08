@@ -4,6 +4,8 @@ from sklearn.ensemble import RandomForestRegressor
 import joblib
 import os
 
+# FROZEN: Reference Implementation v1.0-RC
+# This script generates the standard model artifact used in the final system.
 print("Training final wildfire risk model...")
 
 # 1. Generate Synthetic Training Data (Representing CA Climate)

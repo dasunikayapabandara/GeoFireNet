@@ -45,7 +45,7 @@ def generate_test_data(n_samples=500):
     data = []
     labels = []
     
-    threshold = 60  # Risk > 60 implies Fire Condition
+    threshold = 50  # Risk >= 50 implies Fire Condition (Calibrated)
     
     for _ in range(n_samples):
         # Generate random features
@@ -111,8 +111,8 @@ def main():
         try:
             # Predict
             score = model.predict(x[0], x[1], x[2], x[3])
-            # Convert to Binary Classification (Threshold 60)
-            pred = 1 if score > 60 else 0
+            # Convert to Binary Classification (Threshold 50 - Calibrated for Safety)
+            pred = 1 if score >= 50 else 0
             y_pred_model.append(pred)
         except Exception as e:
             print(f"Error predicting: {e}")
@@ -122,7 +122,7 @@ def main():
     y_pred_heuristic = []
     for x in X_test:
         score = model.predict_heuristic(x[0], x[1], x[2], x[3])
-        pred = 1 if score > 60 else 0
+        pred = 1 if score >= 50 else 0
         y_pred_heuristic.append(pred)
 
     # 5. Calculate Metrics

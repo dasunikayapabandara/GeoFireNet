@@ -44,8 +44,8 @@ class RiskPrediction(BaseModel):
 
 def get_risk_level(score):
     if score < 30: return "Low"
-    if score < 60: return "Moderate"
-    if score < 85: return "High"
+    if score < 50: return "Moderate"
+    if score < 80: return "High"
     return "Extreme"
 
 def get_risk_drivers(temp, humidity, wind, veg):
@@ -55,13 +55,21 @@ def get_risk_drivers(temp, humidity, wind, veg):
     n_wind = min(wind / 100.0, 1.0)
     n_veg = min(veg, 1.0)
     
-    # Calculate weighted contributions (approximate from heuristic/model logic)
-    contribs = {
-        "Extreme Heat": 40 * n_temp,
-        "High Winds": 20 * n_wind,
-        "Low Humidity": 30 * (1.0 - n_hum),
-        "Dry Vegetation": 30 * (1.0 - n_veg)
-    }
+    contribs = {}
+    
+    # Only list as a driver if it's actually contributing significantly to *risk* (high value)
+    # Threshold 0.6 -> e.g. Temp > 30C, Wind > 60kmh
+    if n_temp > 0.6:
+        contribs["High Temperature"] = 40 * n_temp
+    
+    if n_wind > 0.6:
+        contribs["Strong Winds"] = 20 * n_wind
+        
+    if (1.0 - n_hum) > 0.6: # Humidity < 40%
+        contribs["Low Humidity"] = 30 * (1.0 - n_hum)
+        
+    if (1.0 - n_veg) > 0.6: # Veg Moisture < 0.4
+        contribs["Dry Vegetation"] = 30 * (1.0 - n_veg)
     
     # Interaction
     if n_temp > 0.8 and n_wind > 0.7:
@@ -70,8 +78,8 @@ def get_risk_drivers(temp, humidity, wind, veg):
     # Sort by contribution
     sorted_factors = sorted(contribs.items(), key=lambda x: x[1], reverse=True)
     
-    # Return top factors that contribute meaningfully (>5 points)
-    drivers = [f[0] for f in sorted_factors if f[1] > 5]
+    # Return top factors
+    drivers = [f[0] for f in sorted_factors]
     return drivers[:3] if drivers else ["Normal Conditions"]
 
 @app.post("/predict", response_model=RiskPrediction)

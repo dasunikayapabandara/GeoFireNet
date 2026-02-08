@@ -79,9 +79,9 @@ class WildfireModel:
         """Returns categorical risk level based on 0-100 score."""
         if score < 30:
             return "Low", "#22c55e" # Green
-        elif score < 60:
+        elif score < 50:
             return "Moderate", "#eab308" # Yellow
-        elif score < 85:
+        elif score < 80:
             return "High", "#f97316" # Orange
         else:
             return "Extreme", "#ef4444" # Red

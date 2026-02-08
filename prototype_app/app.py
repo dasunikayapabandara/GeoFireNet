@@ -167,7 +167,7 @@ with col2:
     st.markdown("---")
     st.markdown("### Decision Support")
     if avg_ml > 80: st.error("⚠️ **EVACUATION ALERT**")
-    elif avg_ml > 60: st.warning("⚠️ **High Alert**")
+    elif avg_ml > 50: st.warning("⚠️ **High Alert**")
     else: st.success("✅ **Status Normal**")
 
     st.markdown("---")

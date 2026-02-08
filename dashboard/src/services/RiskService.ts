@@ -82,8 +82,8 @@ const calculateFallbackRisk = (temp: number, humidity: number, wind: number, veg
 
 const getRiskStatus = (score: number): 'low' | 'moderate' | 'high' | 'extreme' => {
     if (score < 30) return 'low';
-    if (score < 60) return 'moderate';
-    if (score < 85) return 'high';
+    if (score < 50) return 'moderate';
+    if (score < 80) return 'high';
     return 'extreme';
 };
 
