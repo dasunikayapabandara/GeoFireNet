@@ -27,15 +27,22 @@ X = pd.DataFrame({
     'veg': veg
 })
 
-# Target: Risk Score (0-1)
-# Formula: 0.4*T + 0.2*W - 0.3*H - 0.3*V + small_noise
-# Normalized roughly to 0-1
-score = (0.4 * (temp/50)) + (0.2 * (wind/100)) - (0.3 * (humidity/100)) - (0.3 * veg) + 0.4
-# Add non-linear interactions (e.g. High Temp + High Wind = Super Bad)
-score += 0.2 * ((temp/50) * (wind/100)) 
+# Target: Risk Score (0-100)
+# Formula: Base weights (normalized features)
+# Score = (40 * nT + 20 * nW - 30 * nH - 30 * nV) + Intercept
+# Added interaction: High Temp (nT > 0.8) + High Wind (nW > 0.7) -> Additional +15 risk
+nT = temp / 50.0
+nH = humidity / 100.0
+nW = wind / 100.0
+nV = veg
 
-# Clip to 0-1
-y = np.clip(score + np.random.normal(0, 0.05, n_samples), 0, 1)
+score = (40 * nT) + (20 * nW) - (30 * nH) - (30 * nV) + 40
+
+# Add non-linear interactions (e.g. Extreme Heat + Wind = Exponential Risk)
+score += 20 * (nT * nW) 
+
+# Add random noise and clip to 0-100
+y = np.clip(score + np.random.normal(0, 5, n_samples), 0, 100)
 
 # 2. Train Model
 model = RandomForestRegressor(n_estimators=100, random_state=42)

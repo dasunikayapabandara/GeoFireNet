@@ -57,8 +57,24 @@ col1, col2 = st.columns([3, 1])
 with col1:
     st.subheader("Geospatial Risk Visualization")
 
-    # Dynamic center based on region filter
-    m = folium.Map(location=[region_view["lat"], region_view["lon"]], zoom_start=region_view["zoom"], tiles="CartoDB dark_matter")
+    # Session State for Map View
+    if "map_center" not in st.session_state:
+        st.session_state.map_center = [region_view["lat"], region_view["lon"]]
+        st.session_state.map_zoom = region_view["zoom"]
+        st.session_state.last_region = selected_region
+
+    # Update View ONLY if Region Changed
+    if selected_region != st.session_state.last_region:
+        st.session_state.map_center = [region_view["lat"], region_view["lon"]]
+        st.session_state.map_zoom = region_view["zoom"]
+        st.session_state.last_region = selected_region
+
+    # Dynamic center based on session state (Preserves zoom/pan on slider update)
+    m = folium.Map(
+        location=st.session_state.map_center, 
+        zoom_start=st.session_state.map_zoom, 
+        tiles="OpenStreetMap"
+    )
 
     # Define Mock Regions (GeoJSON) - Same as before
     mock_regions = {
@@ -103,20 +119,55 @@ with col1:
         tooltip=folium.GeoJsonTooltip(fields=["name", "risk_prob", "risk_level"], localize=True)
     ).add_to(m)
 
-    st_folium(m, width="100%", height=500)
+    # Capture map state to persist zoom/pan on sidebar changes
+    map_data = st_folium(
+        m, 
+        width="100%", 
+        height=500,
+        key="fire_map",
+        returned_objects=["last_active_drawing", "zoom", "center"]
+    )
+
+    # Update session state with latest map view if user interacted
+    if map_data and map_data.get("zoom") is not None:
+        st.session_state.map_zoom = map_data["zoom"]
+    if map_data and map_data.get("center") is not None:
+        # st_folium returns center as {'lat': ..., 'lng': ...}
+        center = map_data["center"]
+        st.session_state.map_center = [center["lat"], center["lng"]]
 
 with col2:
     st.subheader("Regional Analytics")
-    # Global risk calculation based on visible regions
-    visible_risks = [f["properties"]["risk_prob"] for f in mock_regions["features"]]
-    avg_risk = sum(visible_risks) / len(visible_risks) if visible_risks else 0
-    avg_level, _ = model.get_risk_level(avg_risk)
     
-    st.metric(label="Regional Risk Score", value=f"{avg_risk:.2f}", delta=f"{avg_level}")
+    # Calculate visible region scores
+    ml_scores = [f["properties"]["risk_prob"] for f in mock_regions["features"]]
+    avg_ml = sum(ml_scores) / len(ml_scores) if ml_scores else 0
+    avg_ml_level, _ = model.get_risk_level(avg_ml)
     
+    # Calculate Heuristic Baselines for same regions
+    base_scores = []
+    for f in mock_regions["features"]:
+        props = f["properties"]
+        l_temp = temp + props.get("temp_offset", 0)
+        base_scores.append(model.predict_heuristic(l_temp, humidity, wind, veg_moisture))
+    
+    avg_base = sum(base_scores) / len(base_scores) if base_scores else 0
+    avg_base_level, _ = model.get_risk_level(avg_base)
+
+    # Side-by-Side Metrics
+    m1, m2 = st.columns(2)
+    m1.metric("ML Prediction", f"{avg_ml:.0f}/100", f"{avg_ml_level}")
+    m2.metric("Baseline (Linear)", f"{avg_base:.0f}/100", f"{avg_base_level}", delta_color="off")
+    
+    # Comparison Insight
+    diff = avg_ml - avg_base
+    if diff > 5:
+        st.info(f"💡 **ML Insight**: Model detected **+{diff:.0f} points** additional risk due to non-linear climate interactions (e.g. Extreme Heat + Wind).")
+    
+    st.markdown("---")
     st.markdown("### Decision Support")
-    if avg_risk > 0.8: st.error("⚠️ **EVACUATION ALERT**")
-    elif avg_risk > 0.6: st.warning("⚠️ **High Alert**")
+    if avg_ml > 80: st.error("⚠️ **EVACUATION ALERT**")
+    elif avg_ml > 60: st.warning("⚠️ **High Alert**")
     else: st.success("✅ **Status Normal**")
 
     st.markdown("---")

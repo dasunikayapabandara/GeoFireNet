@@ -1,5 +1,8 @@
 # 🔥 GeoFireNet: Wildfire Risk Prediction System
 
+**Status**: FROZEN ❄️ (v1.0-RC)
+**Docs**: [System Freeze](file:///home/dasunika/.gemini/antigravity/brain/47bb03d4-c784-4fe4-a72d-f104bd22053b/system_freeze.md) | [Walkthrough](file:///home/dasunika/.gemini/antigravity/brain/47bb03d4-c784-4fe4-a72d-f104bd22053b/walkthrough.md)
+
 **An AI-driven dashboard for visualizing and predicting wildfire risk using satellite data and climate metrics.**
 
 This repository contains the complete source code for the GeoFireNet system, structured into three modular components:

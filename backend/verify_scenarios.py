@@ -3,10 +3,10 @@ import os
 
 MODEL_PATH = "model.pkl"
 
-def get_risk_level(prob):
-    if prob < 0.3: return "Low", "Normal"
-    if prob < 0.6: return "Moderate", "Caution"
-    if prob < 0.85: return "High", "Warning"
+def get_risk_level(score):
+    if score < 30: return "Low", "Normal"
+    if score < 60: return "Moderate", "Caution"
+    if score < 85: return "High", "Warning"
     return "Extreme", "Evacuate"
 
 def predict_risk(temp, hum, wind, veg):
@@ -22,22 +22,17 @@ def predict_risk(temp, hum, wind, veg):
     except Exception as e:
         print(f"Model Error: {e}. Using Fallback.")
 
-    # Tuned Logic for Validation
-    # T(40)=0.8, W(50)=0.5, H(10)=0.1, V(0.1)
-    # Goal: > 0.85
-    # New: 0.5*T + 0.3*W - 0.2*H - 0.2*V + 0.2
-    # 0.5(0.8) + 0.3(0.5) - 0.2(0.1) - 0.2(0.1) + 0.2
-    # 0.4 + 0.15 - 0.02 - 0.02 + 0.2 = 0.71 (Still High, not Extreme)
-    # Let's boost intercept: +0.35
-    # 0.71 + 0.15 = 0.86 (Extreme)
-    
+    # Tuned Fallback Logic (Matches model.py)
     n_temp = min(temp / 50.0, 1.0)
     n_hum = min(hum / 100.0, 1.0)
     n_wind = min(wind / 100.0, 1.0)
     n_veg = min(veg, 1.0)
     
-    score = (0.5 * n_temp) + (0.3 * n_wind) - (0.2 * n_hum) - (0.2 * n_veg) + 0.35
-    return max(0.0, min(score, 1.0))
+    score = (40 * n_temp) + (20 * n_wind) - (30 * n_hum) - (30 * n_veg) + 40
+    if n_temp > 0.8 and n_wind > 0.7:
+        score += 20
+        
+    return max(0.0, min(score, 100.0))
 
 def run_scenario(name, inputs):
     print(f"\n--- Scenario: {name} ---")
@@ -46,7 +41,7 @@ def run_scenario(name, inputs):
     risk_score = predict_risk(inputs['temp'], inputs['hum'], inputs['wind'], inputs['veg'])
     level, action = get_risk_level(risk_score)
     
-    print(f"-> Risk Score: {risk_score:.2f} ({risk_score*100:.0f}%)")
+    print(f"-> Risk Score: {risk_score:.2f}/100")
     print(f"-> Risk Level: {level.upper()}")
     print(f"-> Action: {action}")
     
@@ -64,8 +59,8 @@ if __name__ == "__main__":
     print("Verifying Realistic Wildfire Scenarios...")
     
     # 1. Extreme Summer Drought
-    # High Temp (40), Low Hum (10), High Wind (50), Dry Veg (0.1)
-    run_scenario("Extreme Drought", {"temp": 40, "hum": 10, "wind": 50, "veg": 0.1})
+    # High Temp (45), Low Hum (5), High Wind (60), Dry Veg (0.05)
+    run_scenario("Extreme Drought", {"temp": 45, "hum": 5, "wind": 60, "veg": 0.05})
     
     # 2. Low-Risk Wet Season
     # Low Temp (15), High Hum (80), Low Wind (10), Wet Veg (0.9)
