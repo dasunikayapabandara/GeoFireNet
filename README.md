@@ -52,9 +52,26 @@ npm run dev
 *   Interactive Leaflet Map with Risk Polygons.
 *   Real-time Alerts & Analytics Charts.
 
+### 3. Unified Backend API (Optional)
+Run a central FastAPI server to serve the *same* model predictions to both apps.
+
+```bash
+cd backend
+# Install dependencies
+pip install fastapi uvicorn scikit-learn pandas joblib
+
+# Generate the Model
+python train_model.py
+
+# Start the API
+python main.py
+```
+The API will be available at `http://localhost:8000/docs`.
+
 ## 🛠️ Technology Stack
 *   **Frontend**: React, Vite, TypeScript, Leaflet, Chart.js
-*   **Prototype**: Python, Streamlit, Folium, Pandas, Scikit-Learn
+*   **Backend**: Python, FastAPI, Uvicorn
+*   **Prototype**: Streamlit, Folium
 *   **Data**: GeoJSON, Mock API Services
 
 ## 🤝 Contributing
