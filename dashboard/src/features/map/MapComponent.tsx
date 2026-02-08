@@ -67,6 +67,14 @@ const MapComponent: React.FC = () => {
                     />
                 )}
             </MapContainer>
+
+            <div className="map-legend">
+                <h4>Risk Levels</h4>
+                <div className="legend-item"><span className="legend-color risk-extreme-bg"></span> Extreme (&gt;85%)</div>
+                <div className="legend-item"><span className="legend-color risk-high-bg"></span> High (60-85%)</div>
+                <div className="legend-item"><span className="legend-color risk-moderate-bg"></span> Moderate (30-60%)</div>
+                <div className="legend-item"><span className="legend-color risk-low-bg"></span> Low (&lt;30%)</div>
+            </div>
         </div>
     );
 };

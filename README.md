@@ -1,82 +1,77 @@
 # 🔥 GeoFireNet: Wildfire Risk Prediction System
 
-**An AI-driven dashboard for visualizing and predicting wildfire risk.**
+**An AI-driven dashboard for visualizing and predicting wildfire risk using satellite data and climate metrics.**
 
-This repository contains two implementation prototypes for the GeoFireNet system:
-1.  **Frontend Dashboard (React + Vite)**: A comprehensive, component-based UI for large-scale deployment.
-2.  **Model Prototype (Python + Streamlit)**: A functional data science sandbox for rapid model testing and visualization.
+This repository contains the complete source code for the GeoFireNet system, structured into three modular components:
+1.  **Frontend Dashboard (Release Candidate)**: A production-ready React interface.
+2.  **Backend API (Inference Engine)**: A Python FastAPI service hosting the trained Random Forest model.
+3.  **Data Science Prototype**: A Streamlit sandbox for model experimentation and validation.
 
-## 📂 Project Structure
+## 📂 Repository Structure
 
 ```
 GeoFireNet/
-├── dashboard/          # Production-ready React Frontend
-│   ├── src/features/   # Map & Dashboard Components
-│   └── src/services/   # Mock Data Services
+├── dashboard/          # [Frontend] React + Vite + Leaflet
+│   ├── src/features/   # Map Visualization & Risk Analytics
+│   └── public/         # Static Assets
 │
-├── prototype_app/      # Python Data Science Prototype
-│   ├── app.py          # Main Streamlit Application
-│   ├── model.py        # Inference Logic (Mock/Real)
+├── backend/            # [Backend] FastAPI + Scikit-Learn
+│   ├── main.py         # REST API Entry Point
+│   ├── train_model.py  # Model Training Pipeline
+│   ├── evaluate_model.py # Performance Metrics & Logic Validation
 │   └── requirements.txt
 │
-└── README.md
+├── prototype_app/      # [Prototype] Streamlit + Folium
+│   ├── app.py          # Interactive Sandbox UI
+│   ├── model.py        # Shared Logic Integration
+│   └── requirements.txt
+│
+└── README.md           # Project Documentation
 ```
 
-## 🚀 Quick Start
+## 🚀 Quick Start Guide
 
-### 1. Python Prototype (For Data Scientists)
-Interact with the risk model, adjust climate sliders, and see real-time map updates.
+### 1. Run the Frontend Dashboard (Recommended Demo)
+The visual centerpiece of the project. Displays real-time risk alerts and interactive maps.
+```bash
+cd dashboard
+npm install   # Install Node dependencies
+npm run dev   # Start local dev server
+```
+> Open http://localhost:5173
 
+### 2. Run the Data Science Prototype
+For examining model variables and testing extreme scenarios.
 ```bash
 cd prototype_app
 pip install -r requirements.txt
 streamlit run app.py
 ```
+> Open http://localhost:8501
 
-**Features:**
-*   Interactive Sliders (Temp, Humidity, Wind).
-*   Dynamic Risk Prediction using Random Forest Logic.
-*   GeoJSON Visualization of specific California regions (Napa, Sonoma).
-
-### 2. React Dashboard (For End Users)
-Explore the production-grade interface with responsive design and modular architecture.
-
-```bash
-cd dashboard
-npm install
-npm run dev
-```
-
-**Features:**
-*   Modern, Dark-Themed UI.
-*   Interactive Leaflet Map with Risk Polygons.
-*   Real-time Alerts & Analytics Charts.
-
-### 3. Unified Backend API (Optional)
-Run a central FastAPI server to serve the *same* model predictions to both apps.
-
+### 3. (Optional) Run the Full Backend API
+To serve the unified model to both apps via REST API.
 ```bash
 cd backend
-# Install dependencies
-pip install fastapi uvicorn scikit-learn pandas joblib
-
-# Generate the Model
-python train_model.py
-
-# Start the API
-python main.py
+pip install -r requirements.txt
+python train_model.py  # Generate model.pkl
+python main.py         # Start API Server
 ```
-The API will be available at `http://localhost:8000/docs`.
+> API Docs at http://localhost:8000/docs
+
+## 📊 Model Evaluation
+To generate quantitative performance metrics (Accuracy, F1-Score, Confusion Matrix):
+```bash
+cd backend
+python evaluate_model.py
+```
+*Results are saved to `evaluation_results.json`.*
 
 ## 🛠️ Technology Stack
-*   **Frontend**: React, Vite, TypeScript, Leaflet, Chart.js
-*   **Backend**: Python, FastAPI, Uvicorn
-*   **Prototype**: Streamlit, Folium
-*   **Data**: GeoJSON, Mock API Services
+*   **Frontend**: React, TypeScript, Leaflet, Chart.js, CSS Modules
+*   **Backend**: Python, FastAPI, Uvicorn, Joblib
+*   **AI/ML**: Scikit-Learn (Random Forest Regressor), Pandas, NumPy
+*   **DevOps**: Vite, ESLint, npm
 
-## 🤝 Contributing
-1.  Fork the repository.
-2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4.  Push to the branch (`git push origin feature/AmazingFeature`).
-5.  Open a Pull Request.
+## 📜 License
+Academic License - GeoFireNet Project Team.

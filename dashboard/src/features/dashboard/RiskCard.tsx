@@ -27,14 +27,29 @@ const RiskCard: React.FC<RiskCardProps> = ({ title, value, change, trend, status
     };
 
     return (
-        <div className="card" style={{ borderLeft: `4px solid ${getStatusColor()}` }}>
-            <h3 style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{title}</h3>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <div className="card risk-card" style={{ borderLeft: `4px solid ${getStatusColor()}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <h3 style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{title}</h3>
+                {status && (
+                    <span className={`status-badge status-${status}`} style={{
+                        fontSize: '0.75rem',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        backgroundColor: `${getStatusColor()}20`,
+                        color: getStatusColor(),
+                        textTransform: 'capitalize'
+                    }}>
+                        {status}
+                    </span>
+                )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: '1rem' }}>
                 <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>{value}</span>
                 {change && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.875rem' }}>
                         {getTrendIcon()}
-                        <span style={{ color: trend === 'up' ? 'var(--accent-risk-extreme)' : trend === 'down' ? 'var(--accent-risk-low)' : 'var(--text-secondary)' }}>
+                        <span style={{ color: trend === 'up' && status !== 'low' ? 'var(--accent-risk-extreme)' : 'var(--text-secondary)' }}>
                             {change}
                         </span>
                     </div>
