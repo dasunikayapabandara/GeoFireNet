@@ -12,9 +12,9 @@ function App() {
     switch (activeTab) {
       case 'dashboard':
         // No padding here either, handled by DashboardOverview internal padding
-        return <div style={{ height: '100%', width: '100%' }}><DashboardOverview /></div>;
+        return <div className="full-size-container"><DashboardOverview /></div>;
       case 'map':
-        return <div style={{ height: '100%', width: '100%' }}><MapComponent /></div>;
+        return <div className="full-size-container"><MapComponent /></div>;
       case 'analytics':
         return <div className="p-6"><h2>Analytics</h2><p>Risk trend analysis and history.</p></div>;
       case 'settings':

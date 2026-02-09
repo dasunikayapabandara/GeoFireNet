@@ -1,0 +1,9 @@
+.loadingContainer {
+    height: 300px;
+    color: var(--text-secondary);
+}
+
+.chartContainer {
+    height: 300px;
+    width: 100%;
+}

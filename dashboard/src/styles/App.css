@@ -32,3 +32,8 @@ h2 {
 p {
     color: var(--text-secondary);
 }
+
+.full-size-container {
+    height: 100%;
+    width: 100%;
+}

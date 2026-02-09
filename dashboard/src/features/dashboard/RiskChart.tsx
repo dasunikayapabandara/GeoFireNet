@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import type { RiskChartData } from '../../services/RiskService';
+import styles from './RiskChart.module.css';
 
 ChartJS.register(
     CategoryScale,
@@ -80,10 +81,10 @@ const RiskChart: React.FC<RiskChartProps> = ({ data }) => {
     };
 
     if (!data) {
-        return <div className="flex-center" style={{ height: '300px', color: 'var(--text-secondary)' }}>Loading Chart...</div>;
+        return <div className={`flex-center ${styles.loadingContainer}`}>Loading Chart...</div>;
     }
 
-    return <div style={{ height: '300px', width: '100%' }}><Line options={options} data={chartData} /></div>;
+    return <div className={styles.chartContainer}><Line options={options} data={chartData} /></div>;
 };
 
 export default RiskChart;
