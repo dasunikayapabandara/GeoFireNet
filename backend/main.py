@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import joblib
 import os
 import numpy as np
@@ -34,6 +34,38 @@ class WildfireFeatures(BaseModel):
     humidity: float
     wind: float
     veg_moisture: float
+
+    @field_validator('temp')
+    @classmethod
+    def clamp_temp(cls, v):
+        if v < 0.0 or v > 50.0:
+            print(f"WARNING: Clamping temperature input {v} to [0, 50]")
+            return max(0.0, min(v, 50.0))
+        return v
+
+    @field_validator('humidity')
+    @classmethod
+    def clamp_humidity(cls, v):
+        if v < 0.0 or v > 100.0:
+            print(f"WARNING: Clamping humidity input {v} to [0, 100]")
+            return max(0.0, min(v, 100.0))
+        return v
+
+    @field_validator('wind')
+    @classmethod
+    def clamp_wind(cls, v):
+        if v < 0.0 or v > 100.0:
+            print(f"WARNING: Clamping wind input {v} to [0, 100]")
+            return max(0.0, min(v, 100.0))
+        return v
+
+    @field_validator('veg_moisture')
+    @classmethod
+    def clamp_veg(cls, v):
+        if v < 0.0 or v > 1.0:
+            print(f"WARNING: Clamping veg_moisture input {v} to [0, 1]")
+            return max(0.0, min(v, 1.0))
+        return v
 
 class RiskPrediction(BaseModel):
     risk_score: float

@@ -32,6 +32,12 @@ class WildfireModel:
         Baseline heuristic formula calculation (0-100).
         This is a linear model used as a comparative baseline.
         """
+        # Contract Enforcement: Log Warnings
+        if not (0 <= temp_c <= 50): print(f"WARNING: Clamping temp {temp_c} to [0, 50]")
+        if not (0 <= humidity_pct <= 100): print(f"WARNING: Clamping humidity {humidity_pct} to [0, 100]")
+        if not (0 <= wind_kmh <= 100): print(f"WARNING: Clamping wind {wind_kmh} to [0, 100]")
+        if not (0 <= veg_moisture <= 1): print(f"WARNING: Clamping veg {veg_moisture} to [0, 1]")
+
         n_temp = np.clip(temp_c / 50.0, 0, 1)
         n_hum = np.clip(humidity_pct / 100.0, 0, 1)
         n_wind = np.clip(wind_kmh / 100.0, 0, 1)
