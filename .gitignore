@@ -28,3 +28,9 @@ lerna-debug.log*
 
 # Streamlit
 .streamlit/
+
+# Datasets and Large Files
+Climate Data/
+NASA FIRMS Dataset/
+Sentinel-2 Imagery/
+miniconda.sh

@@ -34,7 +34,11 @@ interface ApiRiskResponse {
     baseline_score: number;
     baseline_level: string;
     primary_drivers: string[];
+    system_status: 'PRODUCTION' | 'SIMULATION' | 'DEGRADED';
 }
+
+// Global state to track status (Naive implementation for demo)
+export let currentSystemStatus: string = 'UNKNOWN';
 
 const mockAlerts: Alert[] = [
     { id: '1', title: 'High Wind Warning', description: 'Gusts up to 45mph in Northern Sector.', timestamp: '2h ago', severity: 'high' },
@@ -71,6 +75,7 @@ const currentConditions = {
 
 // Fallback Logic (Client-Side)
 const calculateFallbackRisk = (temp: number, humidity: number, wind: number, veg: number): number => {
+    // ... (same as before)
     const n_temp = Math.min(temp / 50.0, 1);
     const n_hum = Math.min(humidity / 100.0, 1);
     const n_wind = Math.min(wind / 100.0, 1);
@@ -107,10 +112,11 @@ export const RiskService = {
 
             const data: ApiRiskResponse = await response.json();
             mlScore = data.risk_score;
-            mlStatus = data.risk_level.toLowerCase() as any;
+            mlStatus = data.risk_level.toLowerCase() as 'low' | 'moderate' | 'high' | 'extreme';
             baselineScore = data.baseline_score;
-            baselineStatus = data.baseline_level.toLowerCase() as any;
+            baselineStatus = data.baseline_level.toLowerCase() as 'low' | 'moderate' | 'high' | 'extreme';
             drivers = data.primary_drivers || [];
+            currentSystemStatus = data.system_status; // Update global status
 
         } catch (error) {
             console.warn("Backend API unreachable. Using fallback logic.", error);
@@ -120,13 +126,14 @@ export const RiskService = {
             baselineStatus = getRiskStatus(baselineScore);
             mlStatus = baselineStatus;
             drivers = ["Data Unavailable"];
+            currentSystemStatus = 'DEGRADED (Client Fallback)';
         }
 
         return [
             {
                 title: "Avg. Risk Score (ML)",
                 value: `${Math.round(mlScore)}/100`,
-                change: drivers.length > 0 ? `Drivers: ${drivers[0]}` : "Stable", // Display top driver as 'change' text for visibility
+                change: drivers.length > 0 ? `Drivers: ${drivers[0]}` : "Stable",
                 trend: "up",
                 status: mlStatus
             },
@@ -137,6 +144,7 @@ export const RiskService = {
                 trend: "neutral",
                 status: baselineStatus
             },
+
             {
                 title: "Active Hotspots",
                 value: "14",

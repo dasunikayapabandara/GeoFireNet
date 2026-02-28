@@ -16,18 +16,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from enum import Enum
+
+class SystemMode(str, Enum):
+    PRODUCTION = "PRODUCTION"
+    SIMULATION = "SIMULATION"
+    DEGRADED = "DEGRADED"
+
 # Load Model
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.pkl")
 model = None
+CURRENT_MODE = SystemMode.PRODUCTION
 
 try:
-    if os.path.exists(MODEL_PATH):
+    # Check for forced degraded mode via Env Var
+    if os.environ.get("SIMULATE_OUTAGE") == "1":
+        CURRENT_MODE = SystemMode.DEGRADED
+        print(f"STARTUP: Forced DEGRADED mode via environment variable.")
+    elif os.path.exists(MODEL_PATH):
         model = joblib.load(MODEL_PATH)
-        print(f"Loaded model from {MODEL_PATH}")
+        CURRENT_MODE = SystemMode.PRODUCTION
+        print(f"STARTUP: Loaded model from {MODEL_PATH}. Mode: PRODUCTION")
     else:
-        print("Warning: model.pkl not found. API will use mock logic.")
+        CURRENT_MODE = SystemMode.SIMULATION
+        print("STARTUP: Warning: model.pkl not found. Mode: SIMULATION (Heuristic Fallback)")
 except Exception as e:
-    print(f"Error loading model: {e}")
+    print(f"STARTUP: Error loading model: {e}. Defaulting to SIMULATION")
+    CURRENT_MODE = SystemMode.SIMULATION
 
 class WildfireFeatures(BaseModel):
     temp: float
@@ -73,6 +88,7 @@ class RiskPrediction(BaseModel):
     baseline_score: float
     baseline_level: str
     primary_drivers: list[str]
+    system_status: SystemMode
 
 def get_risk_level(score):
     if score < 30: return "Low"
@@ -125,35 +141,38 @@ async def predict_risk(features: WildfireFeatures):
     baseline_score = (40 * n_temp) + (20 * n_wind) - (30 * n_hum) - (30 * n_veg) + 40
     baseline_score = max(0.0, min(baseline_score, 100.0))
     
-    # 2. Calculate ML Prediction (Primary Source of Truth)
-    if model:
+    # 2. Calculate ML Prediction (Depends on Mode)
+    ml_score = baseline_score # Default to baseline
+    
+    if CURRENT_MODE == SystemMode.PRODUCTION and model:
         # Use trained model
         input_vector = [[features.temp, features.humidity, features.wind, features.veg_moisture]]
         try:
             # Model trained to predict 0-100 score directly
-            # verify using verify_scenarios.py if it outputs probability or score
-            # Based on view_file of train_model.py, it's a Regressor predicting 0-100 score.
             raw_score = float(model.predict(input_vector)[0])
             ml_score = max(0.0, min(raw_score, 100.0))
         except Exception as e:
             print(f"Model prediction failed: {e}")
-            # Fallback to heuristic if model fails purely
-            ml_score = baseline_score
-    else:
-        # Fallback Mock ML logic (Simulates model behavior)
-        ml_score = baseline_score
-        # Add non-linear boost to simulate ML "insight"
+            # Fallback is already set
+    elif CURRENT_MODE == SystemMode.SIMULATION:
+        # Strict Mock Logic
+         # Add non-linear boost to simulate ML "insight" in simulation mode
         if n_temp > 0.8 and n_wind > 0.7:
             ml_score += 20
-            
-    ml_score = max(0.0, min(ml_score, 100.0))
+        ml_score = max(0.0, min(ml_score, 100.0))
+    elif CURRENT_MODE == SystemMode.DEGRADED:
+        # In degraded mode, we might just return baseline or even 0 if totally broken
+        # Requirements say "External Services unavailable", implying backend works but maybe DB/Model is out.
+        # Let's return baseline to be safe.
+        pass
 
     return {
         "risk_score": round(ml_score, 2),
         "risk_level": get_risk_level(ml_score),
         "baseline_score": round(baseline_score, 2),
         "baseline_level": get_risk_level(baseline_score),
-        "primary_drivers": get_risk_drivers(features.temp, features.humidity, features.wind, features.veg_moisture)
+        "primary_drivers": get_risk_drivers(features.temp, features.humidity, features.wind, features.veg_moisture),
+        "system_status": CURRENT_MODE
     }
 
 if __name__ == "__main__":

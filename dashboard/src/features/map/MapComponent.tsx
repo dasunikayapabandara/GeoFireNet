@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import './Map.css';
-import { MapService, type RiskGeoJSON } from '../../services/MapService';
+import { MapService, type RiskGeoJSON, type RiskZoneFeature } from '../../services/MapService';
+import type { FeatureCollection, Feature, Geometry } from 'geojson';
 import L from 'leaflet';
 
 const MapComponent: React.FC = () => {
@@ -20,7 +21,7 @@ const MapComponent: React.FC = () => {
         fetchZones();
     }, []);
 
-    const onEachFeature = (feature: any, layer: L.Layer) => {
+    const onEachFeature = (feature: Feature<Geometry, RiskZoneFeature['properties']>, layer: L.Layer) => {
         if (feature.properties && feature.properties.name) {
             layer.bindPopup(`
         <div class="map-popup">
@@ -33,7 +34,7 @@ const MapComponent: React.FC = () => {
         }
     };
 
-    const styleFeature = (feature: any) => {
+    const styleFeature = (feature: Feature<Geometry, RiskZoneFeature['properties']> | undefined) => {
         switch (feature?.properties?.riskLevel) {
             case 'extreme': return { color: '#ef4444', weight: 2, fillOpacity: 0.6 };
             case 'high': return { color: '#f97316', weight: 2, fillOpacity: 0.5 };
@@ -61,7 +62,7 @@ const MapComponent: React.FC = () => {
 
                 {riskZones && (
                     <GeoJSON
-                        data={riskZones as any}
+                        data={riskZones as FeatureCollection}
                         style={styleFeature}
                         onEachFeature={onEachFeature}
                     />

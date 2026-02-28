@@ -5,6 +5,8 @@ import MapComponent from './features/map/MapComponent';
 import DashboardOverview from './features/dashboard/DashboardOverview';
 import './styles/App.css';
 
+import Footer from './components/Footer';
+
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -33,6 +35,7 @@ function App() {
           {renderContent()}
         </main>
       </div>
+      <Footer />
     </div>
   );
 }
