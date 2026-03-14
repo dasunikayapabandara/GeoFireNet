@@ -41,7 +41,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Header />
+      <Header setActiveTab={setActiveTab} />
       <div className="main-layout">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         <main className="content-area">

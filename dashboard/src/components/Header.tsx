@@ -2,10 +2,10 @@ import React from 'react';
 import { Flame, Bell, User, ShieldCheck } from 'lucide-react';
 import '../styles/Header.css';
 
-const Header: React.FC = () => {
+const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTab }) => {
     return (
         <header className="header">
-            <div className="header-logo">
+            <div className="header-logo" onClick={() => setActiveTab('dashboard')} style={{ cursor: 'pointer' }}>
                 <Flame className="logo-icon" size={24} color="#f97316" />
                 <h1 className="logo-text">GeoFireNet</h1>
                 <div className="system-status desktop-only">
