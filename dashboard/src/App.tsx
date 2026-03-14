@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import MapComponent from './features/map/MapComponent';
 import DashboardOverview from './features/dashboard/DashboardOverview';
+import ReactiveCapture from './features/reactive/ReactiveCapture';
 import './styles/App.css';
 
 import Footer from './components/Footer';
@@ -17,6 +18,8 @@ function App() {
         return <div className="full-size-container"><DashboardOverview /></div>;
       case 'map':
         return <div className="full-size-container"><MapComponent /></div>;
+      case 'reactive':
+        return <div className="full-size-container"><ReactiveCapture /></div>;
       case 'analytics':
         return <div className="p-6"><h2>Analytics</h2><p>Risk trend analysis and history.</p></div>;
       case 'settings':

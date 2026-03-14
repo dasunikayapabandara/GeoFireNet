@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Map, BarChart3, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Map, BarChart3, Settings, LogOut, Camera } from 'lucide-react';
 import '../styles/Sidebar.css';
 
 interface SidebarProps {
@@ -11,6 +11,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     const menuItems = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
         { id: 'map', icon: Map, label: 'Live Map' },
+        { id: 'reactive', icon: Camera, label: 'Reactive' },
         { id: 'analytics', icon: BarChart3, label: 'Analytics' },
         { id: 'settings', icon: Settings, label: 'Settings' },
     ];

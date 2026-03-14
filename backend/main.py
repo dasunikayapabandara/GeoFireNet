@@ -1,48 +1,40 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from pydantic import BaseModel, field_validator
-import joblib
-import os
-import numpy as np
 from fastapi.middleware.cors import CORSMiddleware
+import os
+from enum import Enum
 
-app = FastAPI(title="GeoFireNet Risk API")
+# Import our new Predictor Engine
+from backend.predict import RiskPredictor
+
+app = FastAPI(title="GeoFireNet Risk API v2")
 
 # Allow CORS for React Dashboard
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-from enum import Enum
 
 class SystemMode(str, Enum):
     PRODUCTION = "PRODUCTION"
     SIMULATION = "SIMULATION"
     DEGRADED = "DEGRADED"
 
-# Load Model
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.pkl")
-model = None
-CURRENT_MODE = SystemMode.PRODUCTION
+# Initialize ML Predictor (Loads securely cached models)
+predictor = RiskPredictor()
 
-try:
-    # Check for forced degraded mode via Env Var
-    if os.environ.get("SIMULATE_OUTAGE") == "1":
-        CURRENT_MODE = SystemMode.DEGRADED
-        print(f"STARTUP: Forced DEGRADED mode via environment variable.")
-    elif os.path.exists(MODEL_PATH):
-        model = joblib.load(MODEL_PATH)
-        CURRENT_MODE = SystemMode.PRODUCTION
-        print(f"STARTUP: Loaded model from {MODEL_PATH}. Mode: PRODUCTION")
-    else:
-        CURRENT_MODE = SystemMode.SIMULATION
-        print("STARTUP: Warning: model.pkl not found. Mode: SIMULATION (Heuristic Fallback)")
-except Exception as e:
-    print(f"STARTUP: Error loading model: {e}. Defaulting to SIMULATION")
+CURRENT_MODE = SystemMode.PRODUCTION
+if os.environ.get("SIMULATE_OUTAGE") == "1":
+    CURRENT_MODE = SystemMode.DEGRADED
+    print(f"STARTUP: Forced DEGRADED mode via environment variable.")
+elif predictor.is_mock:
     CURRENT_MODE = SystemMode.SIMULATION
+    print(f"STARTUP: Model found missing/invalid. Falling back to SIMULATION.")
+else:
+    print(f"STARTUP: Model validated. Mode: PRODUCTION")
 
 class WildfireFeatures(BaseModel):
     temp: float
@@ -53,127 +45,105 @@ class WildfireFeatures(BaseModel):
     @field_validator('temp')
     @classmethod
     def clamp_temp(cls, v):
-        if v < 0.0 or v > 50.0:
-            print(f"WARNING: Clamping temperature input {v} to [0, 50]")
-            return max(0.0, min(v, 50.0))
+        if v < -20.0 or v > 60.0: # Wider bounds for robustness vs just 0-50
+            print(f"WARNING: API Clamping temperature input {v} to [-20, 60]")
+            return max(-20.0, min(v, 60.0))
         return v
 
     @field_validator('humidity')
     @classmethod
     def clamp_humidity(cls, v):
         if v < 0.0 or v > 100.0:
-            print(f"WARNING: Clamping humidity input {v} to [0, 100]")
+            print(f"WARNING: API Clamping humidity input {v} to [0, 100]")
             return max(0.0, min(v, 100.0))
         return v
 
     @field_validator('wind')
     @classmethod
     def clamp_wind(cls, v):
-        if v < 0.0 or v > 100.0:
-            print(f"WARNING: Clamping wind input {v} to [0, 100]")
-            return max(0.0, min(v, 100.0))
+        if v < 0.0 or v > 150.0: # Higher bounds for cyclones/extreme wind
+            print(f"WARNING: API Clamping wind input {v} to [0, 150]")
+            return max(0.0, min(v, 150.0))
         return v
 
     @field_validator('veg_moisture')
     @classmethod
     def clamp_veg(cls, v):
         if v < 0.0 or v > 1.0:
-            print(f"WARNING: Clamping veg_moisture input {v} to [0, 1]")
+            print(f"WARNING: API Clamping veg_moisture input {v} to [0, 1]")
             return max(0.0, min(v, 1.0))
         return v
 
 class RiskPrediction(BaseModel):
-    risk_score: float
+    risk_score: float # Kept for UI legacy, scaled 0-100
+    risk_probability: float # The raw ML confidence
     risk_level: str
     baseline_score: float
     baseline_level: str
     primary_drivers: list[str]
     system_status: SystemMode
 
-def get_risk_level(score):
-    if score < 30: return "Low"
-    if score < 50: return "Moderate"
-    if score < 80: return "High"
-    return "Extreme"
-
-def get_risk_drivers(temp, humidity, wind, veg):
-    """Identify top contributing factors to risk."""
-    n_temp = min(temp / 50.0, 1.0)
-    n_hum = min(humidity / 100.0, 1.0)
-    n_wind = min(wind / 100.0, 1.0)
-    n_veg = min(veg, 1.0)
-    
-    contribs = {}
-    
-    # Only list as a driver if it's actually contributing significantly to *risk* (high value)
-    # Threshold 0.6 -> e.g. Temp > 30C, Wind > 60kmh
-    if n_temp > 0.6:
-        contribs["High Temperature"] = 40 * n_temp
-    
-    if n_wind > 0.6:
-        contribs["Strong Winds"] = 20 * n_wind
-        
-    if (1.0 - n_hum) > 0.6: # Humidity < 40%
-        contribs["Low Humidity"] = 30 * (1.0 - n_hum)
-        
-    if (1.0 - n_veg) > 0.6: # Veg Moisture < 0.4
-        contribs["Dry Vegetation"] = 30 * (1.0 - n_veg)
-    
-    # Interaction
-    if n_temp > 0.8 and n_wind > 0.7:
-        contribs["Heat+Wind Interaction"] = 20
-        
-    # Sort by contribution
-    sorted_factors = sorted(contribs.items(), key=lambda x: x[1], reverse=True)
-    
-    # Return top factors
-    drivers = [f[0] for f in sorted_factors]
-    return drivers[:3] if drivers else ["Normal Conditions"]
-
 @app.post("/predict", response_model=RiskPrediction)
 async def predict_risk(features: WildfireFeatures):
-    # 1. Calculate Heuristic Baseline (Linear)
-    n_temp = min(features.temp / 50.0, 1.0)
-    n_hum = min(features.humidity / 100.0, 1.0)
-    n_wind = min(features.wind / 100.0, 1.0)
-    n_veg = min(features.veg_moisture, 1.0)
-    
-    baseline_score = (40 * n_temp) + (20 * n_wind) - (30 * n_hum) - (30 * n_veg) + 40
-    baseline_score = max(0.0, min(baseline_score, 100.0))
-    
-    # 2. Calculate ML Prediction (Depends on Mode)
-    ml_score = baseline_score # Default to baseline
-    
-    if CURRENT_MODE == SystemMode.PRODUCTION and model:
-        # Use trained model
-        input_vector = [[features.temp, features.humidity, features.wind, features.veg_moisture]]
-        try:
-            # Model trained to predict 0-100 score directly
-            raw_score = float(model.predict(input_vector)[0])
-            ml_score = max(0.0, min(raw_score, 100.0))
-        except Exception as e:
-            print(f"Model prediction failed: {e}")
-            # Fallback is already set
-    elif CURRENT_MODE == SystemMode.SIMULATION:
-        # Strict Mock Logic
-         # Add non-linear boost to simulate ML "insight" in simulation mode
-        if n_temp > 0.8 and n_wind > 0.7:
-            ml_score += 20
-        ml_score = max(0.0, min(ml_score, 100.0))
-    elif CURRENT_MODE == SystemMode.DEGRADED:
-        # In degraded mode, we might just return baseline or even 0 if totally broken
-        # Requirements say "External Services unavailable", implying backend works but maybe DB/Model is out.
-        # Let's return baseline to be safe.
-        pass
+    if CURRENT_MODE == SystemMode.DEGRADED:
+        # Strict fallback
+        return {
+            "risk_score": 0.0,
+            "risk_probability": 0.0,
+            "risk_level": "Unknown",
+            "baseline_score": 0.0,
+            "baseline_level": "Unknown",
+            "primary_drivers": ["System Offline"],
+            "system_status": CURRENT_MODE
+        }
+        
+    try:
+        # Delegate to Prediction Engine
+        result = predictor.predict(
+            temp=features.temp,
+            humidity=features.humidity,
+            wind=features.wind,
+            veg_moisture=features.veg_moisture
+        )
+        result["system_status"] = CURRENT_MODE
+        return result
+    except Exception as e:
+        print(f"Prediction API Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal Prediction Error")
 
-    return {
-        "risk_score": round(ml_score, 2),
-        "risk_level": get_risk_level(ml_score),
-        "baseline_score": round(baseline_score, 2),
-        "baseline_level": get_risk_level(baseline_score),
-        "primary_drivers": get_risk_drivers(features.temp, features.humidity, features.wind, features.veg_moisture),
-        "system_status": CURRENT_MODE
-    }
+class ReactivePrediction(BaseModel):
+    is_fire: bool
+    confidence: float
+    message: str
+
+@app.post("/predict/reactive", response_model=ReactivePrediction)
+async def predict_reactive(file: UploadFile = File(...)):
+    """Reactive Prediction Endpoint: Simulates vision-based fire detection."""
+    try:
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="File must be an image.")
+        
+        filename = file.filename.lower()
+        is_fire = "fire" in filename or "smoke" in filename
+        
+        import random
+        confidence = random.uniform(0.7, 0.99)
+        
+        if is_fire:
+            message = "🔥 FIRE DETECTED: Emergency protocols recommended."
+        else:
+            message = "✅ NO FIRE: Environment appears clear."
+            
+        print(f"REACTIVE API: Analyzed {file.filename}. Result: {message}")
+        
+        return {
+            "is_fire": is_fire,
+            "confidence": round(confidence, 4),
+            "message": message
+        }
+    except Exception as e:
+        print(f"REACTIVE API ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

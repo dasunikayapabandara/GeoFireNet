@@ -1,61 +1,99 @@
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
-import joblib
-import os
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
+from sklearn.model_selection import cross_validate
+from . import config, data_loader, features, model_registry
 
-# FROZEN: Reference Implementation v1.0-RC
-# This script generates the standard model artifact used in the final system.
-print("Training final wildfire risk model...")
+def train_and_compare():
+    print("--- GeoFireNet ML Pipeline: Training Phase ---")
+    
+    # 1. Load Data
+    df = data_loader.load_data()
+    X_train, X_test, y_train, y_test = data_loader.get_train_test_splits(df)
+    
+    # 2. Get Preprocessor
+    preprocessor = features.create_preprocessing_pipeline()
+    
+    # 3. Define Models to Compare
+    # We use class_weight='balanced' where available to handle potential imbalance
+    models = {
+        "Logistic Regression": LogisticRegression(class_weight='balanced', random_state=config.RANDOM_SEED),
+        "Random Forest": RandomForestClassifier(n_estimators=100, class_weight='balanced', max_depth=10, random_state=config.RANDOM_SEED),
+        "Gradient Boosting": HistGradientBoostingClassifier(random_state=config.RANDOM_SEED) # HistGB doesn't have class_weight directly, but it's very robust
+    }
+    
+    results = {}
+    best_model_name = None
+    best_recall_score = -1.0
+    best_pipeline = None
 
-# 1. Generate Synthetic Training Data (Representing CA Climate)
-np.random.seed(42)
-n_samples = 2000
+    print("\nStarting Cross-Validation (Metric: Recall for Safety-First prioritization)...")
+    for name, model in models.items():
+        # Create full pipeline
+        pipeline = Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('classifier', model)
+        ])
+        
+        # We test cv=5 for robustness
+        # Since this is an early warning system, we heavily favor Recall (Sensitivity)
+        # However, we track F1 and ROC_AUC too.
+        cv_res = cross_validate(
+            pipeline, X_train, y_train, 
+            cv=5, 
+            scoring={'recall': 'recall', 'f1': 'f1', 'roc_auc': 'roc_auc'},
+            n_jobs=-1
+        )
+        
+        mean_recall = cv_res['test_recall'].mean()
+        mean_f1 = cv_res['test_f1'].mean()
+        mean_roc = cv_res['test_roc_auc'].mean()
+        
+        results[name] = {
+            "Recall": mean_recall,
+            "F1": mean_f1,
+            "ROC_AUC": mean_roc
+        }
+        print(f"[{name}] Recall: {mean_recall:.3f} | F1: {mean_f1:.3f} | ROC_AUC: {mean_roc:.3f}")
+        
+    print("\n--- Model Selection ---")
+    # For a project requiring defense of non-linear interactions mapping edge cases, 
+    # RF or GB are theoretically superior. We will pick Random Forest usually due to interpretability 
+    # via feature_importances_, but let's automate selection: If RF or GB recall is high, prefer it.
+    
+    # Let's just pick the best by F1 to be balanced, as we will threshold-tune for Recall later anyway.
+    # Actually, the user asked to optimize for Recall.
+    # But pre-threshold-tuning recall is just default threshold 0.5.
+    # We will pick the model with the highest ROC_AUC, as it has the best discriminative power, 
+    # and then calibrate the threshold for Recall in calibrate_thresholds.py.
+    
+    best_model_name = max(results, key=lambda k: results[k]['ROC_AUC'])
+    print(f"Selected Model based on ROC-AUC (Global Discriminator Power): {best_model_name}")
+    
+    # 4. Train Final Best Model on all training data
+    final_pipeline = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('classifier', models[best_model_name])
+    ])
+    
+    final_pipeline.fit(X_train, y_train)
+    
+    # 5. Save Artifacts
+    model_registry.save_model(final_pipeline)
+    
+    # We can also save a small metadata file
+    meta = {
+        "selected_model": best_model_name,
+        "cv_results": results,
+        "seed": config.RANDOM_SEED
+    }
+    import json
+    with open(config.ARTIFACTS_DIR / "training_meta.json", "w") as f:
+        json.dump(meta, f, indent=4)
+        
+    print("Training Complete. Proceed to Threshold Calibration.")
 
-# Features
-# Temperature (0-50 C) - High temp is bad
-temp = np.random.uniform(0, 50, n_samples)
-# Humidity (0-100 %) - Low humidity is bad
-humidity = np.random.uniform(0, 100, n_samples)
-# Wind Speed (0-100 km/h) - High wind is bad
-wind = np.random.uniform(0, 100, n_samples)
-# Vegetation Moisture (0-1 index) - Low moisture is bad
-veg = np.random.uniform(0, 1, n_samples)
-
-X = pd.DataFrame({
-    'temp': temp,
-    'humidity': humidity,
-    'wind': wind,
-    'veg': veg
-})
-
-# Target: Risk Score (0-100)
-# Formula: Base weights (normalized features)
-# Score = (40 * nT + 20 * nW - 30 * nH - 30 * nV) + Intercept
-# Added interaction: High Temp (nT > 0.8) + High Wind (nW > 0.7) -> Additional +15 risk
-nT = temp / 50.0
-nH = humidity / 100.0
-nW = wind / 100.0
-nV = veg
-
-score = (40 * nT) + (20 * nW) - (30 * nH) - (30 * nV) + 40
-
-# Add non-linear interactions (e.g. Extreme Heat + Wind = Exponential Risk)
-score += 20 * (nT * nW) 
-
-# Add random noise and clip to 0-100
-y = np.clip(score + np.random.normal(0, 5, n_samples), 0, 100)
-
-# 2. Train Model
-model = RandomForestRegressor(n_estimators=100, random_state=42)
-model.fit(X, y)
-
-# 3. Save Model Artifact
-output_path = os.path.join(os.path.dirname(__file__), "model.pkl")
-joblib.dump(model, output_path)
-print(f"Model saved to: {output_path}")
-
-# Also copy to prototype_app for direct loading
-proto_path = os.path.join(os.path.dirname(__file__), "../prototype_app/model.pkl")
-joblib.dump(model, proto_path)
-print(f"Model copied to: {proto_path}")
+if __name__ == "__main__":
+    train_and_compare()

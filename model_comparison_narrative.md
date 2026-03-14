@@ -3,6 +3,13 @@
 > [!TIP]
 > Use this narrative to answer the question: *"Why do we need an ML model if the heuristic baseline is almost as accurate?"*
 
+## 0. The Paradigm Shift: From Reactive to Predictive
+
+The fundamental justification for GeoFireNet is not just *accuracy*, but **timing**.
+
+* **Reactive (Satellite-Based)**: Satellite Sensor → Active Fire Detection → Alert Generation. Result: **Emergency Response**.
+* **Predictive (ML/GeoFireNet)**: Climate + Vegetation Data → ML Prediction → Early Warning. Result: **Prevention & Mitigation**.
+
 ## 1. The "Accuracy Parity" Reality
 
 **Observation**: On 90% of "normal" days, the ML model and the Heuristic Baseline produce very similar risk scores.

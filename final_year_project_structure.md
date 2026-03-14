@@ -5,12 +5,12 @@
 
 ## Chapter 1: Introduction
 
-* **1.1 Problem Statement**: Wildfires are becoming more frequent and severe due to climate change, yet current risk assessment tools (like FWI) are often static, non-interactive, and inaccessible to the general public.
-* **1.2 Motivation**: To democratize wildfire risk analysis by creating an accessible, web-based platform that combines real-time weather data with ML-driven risk prediction.
+* **1.1 Problem Statement**: Wildfires are becoming more frequent and severe due to climate change. Current systems are largely **Reactive** (responding to ignition), which limits mitigation efforts to damage control.
+* **1.2 Motivation (The Paradigm Shift)**: To move from a **Reactive** model to a **Predictive** model. By using pre-ignition meteorological data, GeoFireNet identifies high-risk conditions *before* a fire starts, enabling proactive prevention rather than just reactive response.
 * **1.3 Objectives**:
-  * Develop a full-stack web application (React + FastAPI).
-  * Implement a Random Forest model to predict risk from meteorological data.
-  * Compare ML performance against traditional heuristic baselines.
+  * Develop a full-stack web application (React + FastAPI) for real-time risk visualization.
+  * Implement an ML-driven predictive engine to identify non-linear risk amplifications.
+  * Demonstrate the shift from "Damage Control" to "Early Warning & Prevention".
 
 ## Chapter 2: Literature Review
 

@@ -4,3 +4,6 @@ scikit-learn
 pandas
 joblib
 numpy
+python-multipart
+matplotlib
+seaborn

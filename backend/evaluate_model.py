@@ -1,158 +1,84 @@
-import os
 import json
-import random
-import math
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, f1_score, precision_recall_curve, auc
+from . import config, data_loader, model_registry
 
-# Pure Python "Model" Logic (Replica of what's in prototype_app/model.py but without numpy)
-class PurePythonModel:
-    def __init__(self):
-        self.is_mock = True
-        print("Initialized Pure Python Fallback Model (No External Dependencies)")
-
-    def predict_heuristic(self, temp, hum, wind, veg):
-        # Clip inputs
-        n_temp = min(max(temp / 50.0, 0), 1)
-        n_hum = min(max(hum / 100.0, 0), 1)
-        n_wind = min(max(wind / 100.0, 0), 1)
-        n_veg = min(max(veg, 0), 1)
-        
-        # Linear Score
-        score = (40 * n_temp) + (20 * n_wind) - (30 * n_hum) - (30 * n_veg) + 40
-        return min(max(score, 0), 100)
-
-    def predict(self, temp, hum, wind, veg):
-        # Fallback ML Logic (Simulated)
-        n_temp = min(max(temp / 50.0, 0), 1)
-        n_wind = min(max(wind / 100.0, 0), 1)
-        
-        score = self.predict_heuristic(temp, hum, wind, veg)
-        
-        # Non-linear boost: High Temp + High Wind interaction
-        if n_temp > 0.8 and n_wind > 0.7:
-            score += 20
-            
-        # Random noise (gaussian approximation)
-        noise = sum([random.uniform(0,1) for _ in range(12)]) - 6 # Approx normal distribution
-        noise *= 2 # Scale
-        
-        score += noise
-        return min(max(score, 0), 100)
-
-RESULTS_PATH = os.path.join(os.path.dirname(__file__), "evaluation_results.json")
-
-def generate_test_data(n_samples=500):
-    """Generate synthetic test data with ground truth logic."""
-    data = []
-    labels = []
+def evaluate():
+    print("--- GeoFireNet ML Pipeline: Evaluation Phase ---")
     
-    threshold = 50  # Risk >= 50 implies Fire Condition (Calibrated)
+    # 1. Load Data & Model
+    df = data_loader.load_data()
+    _, X_test, _, y_test = data_loader.get_train_test_splits(df)
     
-    for _ in range(n_samples):
-        # Generate random features
-        temp = random.uniform(0, 50)
-        hum = random.uniform(0, 100)
-        wind = random.uniform(0, 100)
-        veg = random.uniform(0, 1)
+    try:
+        model = model_registry.load_model()
+    except Exception as e:
+        print(f"Failed to load model: {e}")
+        return
         
-        # Calculate theoretical risk (Ground Truth Logic)
-        nT = temp / 50.0
-        nH = hum / 100.0
-        nW = wind / 100.0
-        
-        score = (40 * nT) + (20 * nW) - (30 * nH) - (30 * veg) + 40
-        # Add interaction boost (The "Truth" contains the interaction)
-        if nT > 0.8 and nW > 0.7:
-            score += 20
-        risk = max(0, min(score, 100))
-        
-        # Binary Label: Is this a Fire Scenario?
-        label = 1 if risk > threshold else 0
-        
-        data.append([temp, hum, wind, veg])
-        labels.append(label)
-        
-    return data, labels
-
-def calculate_metrics(y_true, y_pred):
-    """Calculate TP, FP, TN, FN and derived metrics."""
-    tp = sum((t == 1 and p == 1) for t, p in zip(y_true, y_pred))
-    tn = sum((t == 0 and p == 0) for t, p in zip(y_true, y_pred))
-    fp = sum((t == 0 and p == 1) for t, p in zip(y_true, y_pred))
-    fn = sum((t == 1 and p == 0) for t, p in zip(y_true, y_pred))
+    print(f"Evaluating model on {len(X_test)} test samples...")
     
-    total = len(y_true)
-    accuracy = (tp + tn) / total if total > 0 else 0
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+    # 2. Predict (using default 0.5 threshold for standard metrics)
+    y_pred = model.predict(X_test)
+    y_proba = model.predict_proba(X_test)[:, 1] # Probability of High Risk
     
-    return {
-        "confusion_matrix": {"TP": tp, "TN": tn, "FP": fp, "FN": fn},
-        "accuracy": accuracy,
-        "precision": precision,
-        "recall": recall,
-        "f1_score": f1
-    }
-
-def main():
-    print("Starting Model Evaluation Pipeline (Pure Python)...")
+    # 3. Calculate Core Metrics
+    roc_auc = roc_auc_score(y_test, y_proba)
+    precision, recall, thresholds_pr = precision_recall_curve(y_test, y_proba)
+    pr_auc = auc(recall, precision)
     
-    # 1. Load Model (Pure Python Implementation)
-    model = PurePythonModel()
-
-    # 2. Generate Test Data
-    X_test, y_true = generate_test_data()
-    print(f"Generated {len(X_test)} test samples.")
-
-    # 3. Use Model for Prediction
-    y_pred_model = []
+    report = classification_report(y_test, y_pred, output_dict=True)
     
-    for x in X_test:
-        try:
-            # Predict
-            score = model.predict(x[0], x[1], x[2], x[3])
-            # Convert to Binary Classification (Threshold 50 - Calibrated for Safety)
-            pred = 1 if score >= 50 else 0
-            y_pred_model.append(pred)
-        except Exception as e:
-            print(f"Error predicting: {e}")
-            y_pred_model.append(0)
-
-    # 4. Generate Heuristic Baseline
-    y_pred_heuristic = []
-    for x in X_test:
-        score = model.predict_heuristic(x[0], x[1], x[2], x[3])
-        pred = 1 if score >= 50 else 0
-        y_pred_heuristic.append(pred)
-
-    # 5. Calculate Metrics
-    model_metrics = calculate_metrics(y_true, y_pred_model)
-    heuristic_metrics = calculate_metrics(y_true, y_pred_heuristic)
-
-    # 6. Output Results
     results = {
-        "model": "Simulated ML Model (Pure Python)",
         "test_samples": len(X_test),
-        "trained_model_metrics": model_metrics,
-        "heuristic_baseline_metrics": heuristic_metrics
+        "roc_auc": float(roc_auc),
+        "pr_auc": float(pr_auc),
+        "classification_report": report
     }
-
-    with open(RESULTS_PATH, 'w') as f:
+    
+    # Save JSON metrics
+    with open(config.EVAL_RESULTS_PATH, 'w') as f:
         json.dump(results, f, indent=4)
         
-    print("\n--- Model Comparison Report ---")
-    print(f"Test Samples: {len(X_test)}")
-    print("\n[ML Model Performance]")
-    print(f"Accuracy:  {model_metrics['accuracy']:.2%}")
-    print(f"Precision: {model_metrics['precision']:.2%}")
-    print(f"Recall:    {model_metrics['recall']:.2%}")
-    print(f"F1-Score:  {model_metrics['f1_score']:.2%}")
-
-    print("\n[Heuristic Baseline]")
-    print(f"Accuracy:  {heuristic_metrics['accuracy']:.2%}")
-    print(f"F1-Score:  {heuristic_metrics['f1_score']:.2%}")
+    print(f"ROC-AUC: {roc_auc:.3f}")
+    print(f"PR-AUC: {pr_auc:.3f}")
+    print(f"F1 Score (Threshold=0.5): {report['1']['f1-score']:.3f}")
+    print(f"Recall (Threshold=0.5): {report['1']['recall']:.3f}")
     
-    print(f"\nResults saved to {RESULTS_PATH}")
+    # 4. Generate & Save Confusion Matrix Plot
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=['Low Risk', 'High Risk'], 
+                yticklabels=['Low Risk', 'High Risk'])
+    plt.ylabel('Actual')
+    plt.xlabel('Predicted (Threshold 0.5)')
+    plt.title('Wildfire Risk Confusion Matrix')
+    plt.tight_layout()
+    plt.savefig(config.CONFUSION_MATRIX_PATH)
+    plt.close()
+    print(f"Saved Confusion Matrix to {config.CONFUSION_MATRIX_PATH}")
+    
+    # 5. Extract Feature Importances (if applicable)
+    classifier = model.named_steps['classifier']
+    feature_eng = model.named_steps['preprocessor'].named_steps['feature_eng']
+    
+    if hasattr(classifier, 'feature_importances_'):
+        feature_names = feature_eng.get_feature_names_out()
+        importances = classifier.feature_importances_
+        
+        # Plot
+        plt.figure(figsize=(8, 5))
+        sns.barplot(x=importances, y=feature_names, palette='viridis')
+        plt.title('Feature Importances for Wildfire Risk')
+        plt.xlabel('Relative Importance')
+        plt.tight_layout()
+        plt.savefig(config.FEATURE_IMPORTANCE_PATH)
+        plt.close()
+        print(f"Saved Feature Importances to {config.FEATURE_IMPORTANCE_PATH}")
+    else:
+        print("Selected model does not support feature_importances_. Plot skipped.")
 
 if __name__ == "__main__":
-    main()
+    evaluate()

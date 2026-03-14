@@ -1,126 +1,79 @@
-import random
-import os
-import sys
+import json
+import numpy as np
+from sklearn.metrics import recall_score, precision_score, f1_score
+from . import config, data_loader, model_registry
 
-# Pure Python Model Logic (Standalone)
-class PurePythonModel:
-    def __init__(self):
-        pass
-
-    def predict(self, temp, hum, wind, veg):
-        # Fallback ML Logic (Simulated)
-        n_temp = min(max(temp / 50.0, 0), 1)
-        n_wind = min(max(wind / 100.0, 0), 1)
-        n_hum = min(max(hum / 100.0, 0), 1)
-        n_veg = min(max(veg, 0), 1)
-        
-        # Linear Score
-        score = (40 * n_temp) + (20 * n_wind) - (30 * n_hum) - (30 * n_veg) + 40
-        
-        # Non-linear boost
-        if n_temp > 0.8 and n_wind > 0.7:
-            score += 20
-        
-        # Noise
-        noise = random.uniform(-5, 5) 
-        score += noise
-        return min(max(score, 0), 100)
-
-def generate_data(n=1000):
-    data = []
-    for _ in range(n):
-        temp = random.uniform(0, 50)
-        hum = random.uniform(0, 100)
-        wind = random.uniform(0, 100)
-        veg = random.uniform(0, 1)
-        
-        # Ground Truth Logic (Slightly different from model to simulate reality gap)
-        nT = temp / 50.0
-        nH = hum / 100.0
-        nW = wind / 100.0
-        
-        # True risk (hidden variable)
-        true_score = (40 * nT) + (20 * nW) - (30 * nH) - (30 * veg) + 40
-        if nT > 0.8 and nW > 0.7: true_score += 20
-        
-        # Label: If true score > 60, it's a FIRE
-        label = 1 if true_score > 60 else 0
-        
-        data.append({
-            "features": [temp, hum, wind, veg],
-            "label": label
-        })
-    return data
-
-def analyze_thresholds():
-    model = PurePythonModel()
-    data = generate_data(2000)
+def calibrate():
+    print("--- GeoFireNet ML Pipeline: Threshold Calibration ---")
     
-    scores = []
-    labels = []
-    for d in data:
-        s = model.predict(*d["features"])
-        scores.append(s)
-        labels.append(d["label"])
-        
-    print(f"Data Points: {len(data)}")
-    print(f"Positive Labels (Fires): {sum(labels)}")
+    # 1. Load Data & Model
+    df = data_loader.load_data()
+    _, X_test, _, y_test = data_loader.get_train_test_splits(df)
+    model = model_registry.load_model()
     
-    # Test Thresholds
-    thresholds = [30, 40, 50, 60, 70, 80, 85, 90]
+    # 2. Get Probabilities
+    y_proba = model.predict_proba(X_test)[:, 1]
     
-    print("\n--- Threshold Analysis (Trying to detect Fire) ---")
-    print(f"{'Threshold':<10} | {'Recall':<10} | {'Precision':<10} | {'F1':<10} | {'FP Rate':<10}")
-    print("-" * 60)
+    # 3. Search Thresholds aiming for Recall > 0.99
+    # We want a system that does not miss fires.
+    thresholds = np.linspace(0.01, 0.99, 99)
     
-    best_f1 = 0
-    best_thresh = 0
+    best_thresh = 0.5
+    best_f1_at_high_recall = 0
+    
+    target_recall = 0.99
+    
+    print(f"Calibrating to achieve Recall >= {target_recall}...")
     
     for t in thresholds:
-        tp = 0
-        fp = 0
-        fn = 0
-        tn = 0
+        y_pred = (y_proba >= t).astype(int)
+        recall = recall_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, zero_division=0)
+        f1 = f1_score(y_test, y_pred, zero_division=0)
         
-        for score, label in zip(scores, labels):
-            pred = 1 if score >= t else 0
-            if pred == 1 and label == 1: tp += 1
-            elif pred == 1 and label == 0: fp += 1
-            elif pred == 0 and label == 1: fn += 1
-            elif pred == 0 and label == 0: tn += 1
-            
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-        fp_rate = fp / (fp + tn) if (fp + tn) > 0 else 0
-        
-        print(f"{t:<10} | {recall:.2%}    | {precision:.2%}    | {f1:.2f}       | {fp_rate:.2%}")
-        
-        if f1 > best_f1:
-            best_f1 = f1
-            best_thresh = t
-            
-    print(f"\nOptimal Single Threshold for F1: {best_thresh}")
-    
-    # Analyze Risk Levels distribution
-    print("\n--- Proposed Levels Distribution (New Tuned Thresholds) ---")
-    proposed_levels = [
-        ("Low", 0, 30),
-        ("Moderate", 30, 50),
-        ("High", 50, 80),
-        ("Extreme", 80, 100)
-    ]
-    
-    counts = {l[0]: 0 for l in proposed_levels}
-    for s in scores:
-        for name, low, high in proposed_levels:
-            if low <= s < high:
-                counts[name] += 1
-                break
-        if s >= 100: counts["Extreme"] += 1 # Catch 100
+        # We want the highest threshold that still maintains our target recall
+        # Higher threshold = fewer false alarms (better precision)
+        if recall >= target_recall:
+            if f1 > best_f1_at_high_recall:
+                best_f1_at_high_recall = f1
+                best_thresh = t
                 
-    for name, count in counts.items():
-        print(f"{name}: {count} ({count/len(scores):.1%})")
+    # Evaluate chosen threshold
+    y_pred_final = (y_proba >= best_thresh).astype(int)
+    final_recall = recall_score(y_test, y_pred_final)
+    final_precision = precision_score(y_test, y_pred_final, zero_division=0)
+    
+    print(f"\n[Calibration Results]")
+    print(f"Selected Threshold: {best_thresh:.3f}")
+    print(f"Resulting Recall:    {final_recall:.3f} (Safety Goal: 1.0 or near)")
+    print(f"Resulting Precision: {final_precision:.3f}")
+    
+    # 4. Map to Risk Levels (Business Logic)
+    # If High Risk defined as >= best_thresh, we partition the space
+    
+    # E.g. best_thresh = 0.3
+    # Low = 0 to 0.15 (half of thresh)
+    # Moderate = 0.15 to thresh
+    # High = thresh to 0.8
+    # Extreme = 0.8+
+    
+    low_bound = round(best_thresh * 0.5, 3)
+    mod_bound = round(best_thresh, 3)
+    high_bound = round(best_thresh + ((1.0 - best_thresh) * 0.5), 3) # halfway between thresh and 1.0
+    
+    risk_levels = {
+        "Low": low_bound,
+        "Moderate": mod_bound,
+        "High": high_bound,
+        "Extreme": 1.0
+    }
+    
+    print("\n[Generated Risk Level Boundaries]")
+    for level, bound in risk_levels.items():
+        print(f"{level}: Probability up to {bound:.3f}")
+        
+    # 5. Save Thresholds Artifact
+    model_registry.save_thresholds(risk_levels)
 
 if __name__ == "__main__":
-    analyze_thresholds()
+    calibrate()

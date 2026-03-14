@@ -5,14 +5,20 @@
 
 **An AI-driven dashboard for visualizing and predicting wildfire risk using satellite data and climate metrics.**
 
-This repository contains the complete source code for the GeoFireNet system, structured into three modular components:
-1.  **Frontend Dashboard (Release Candidate)**: A production-ready React interface.
-2.  **Backend API (Inference Engine)**: A Python FastAPI service hosting the trained Random Forest model.
-3.  **Data Science Prototype**: A Streamlit sandbox for model experimentation and validation.
+## 🔥 The Paradigm Shift: Reactive vs. Predictive
+
+GeoFireNet represents a fundamental change in how we approach wildfire management:
+
+| Model | Workflow | Result |
+| :--- | :--- | :--- |
+| **Reactive** (Traditional) | Satellite Sensor → Active Fire Detection → Alert Generation | **Emergency Response** |
+| **Predictive** (GeoFireNet) | Climate + Vegetation Data → ML Prediction → Early Warning | **Prevention & Mitigation** |
+
+By moving the intervention point to *before* ignition, we shift from managing disasters to preventing them.
 
 ## 📂 Repository Structure
 
-```
+```text
 GeoFireNet/
 ├── dashboard/          # [Frontend] React + Vite + Leaflet
 │   ├── src/features/   # Map Visualization & Risk Analytics
@@ -35,46 +41,60 @@ GeoFireNet/
 ## 🚀 Quick Start Guide
 
 ### 1. Run the Frontend Dashboard (Recommended Demo)
+
 The visual centerpiece of the project. Displays real-time risk alerts and interactive maps.
+
 ```bash
 cd dashboard
 npm install   # Install Node dependencies
 npm run dev   # Start local dev server
 ```
-> Open http://localhost:5173
+
+> Open <http://localhost:5173>
 
 ### 2. Run the Data Science Prototype
+
 For examining model variables and testing extreme scenarios.
+
 ```bash
 cd prototype_app
 pip install -r requirements.txt
 streamlit run app.py
 ```
-> Open http://localhost:8501
+
+> Open <http://localhost:8501>
 
 ### 3. (Optional) Run the Full Backend API
+
 To serve the unified model to both apps via REST API.
+
 ```bash
 cd backend
 pip install -r requirements.txt
 python train_model.py  # Generate model.pkl
 python main.py         # Start API Server
 ```
-> API Docs at http://localhost:8000/docs
+
+> API Docs at <http://localhost:8000/docs>
 
 ## 📊 Model Evaluation
+
 To generate quantitative performance metrics (Accuracy, F1-Score, Confusion Matrix):
+
 ```bash
 cd backend
 python evaluate_model.py
 ```
+
 *Results are saved to `evaluation_results.json`.*
 
 ## 🛠️ Technology Stack
-*   **Frontend**: React, TypeScript, Leaflet, Chart.js, CSS Modules
-*   **Backend**: Python, FastAPI, Uvicorn, Joblib
-*   **AI/ML**: Scikit-Learn (Random Forest Regressor), Pandas, NumPy
-*   **DevOps**: Vite, ESLint, npm
+
+* **Frontend**: React, TypeScript, Leaflet, Chart.js, CSS Modules
+* **Backend**: Python, FastAPI, Uvicorn, Joblib
+* **AI/ML**: Scikit-Learn (Random Forest Regressor), Pandas, NumPy
+* **DevOps**: Vite, ESLint, npm
 
 ## 📜 License
+
 Academic License - GeoFireNet Project Team.

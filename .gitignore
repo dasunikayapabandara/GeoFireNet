@@ -34,3 +34,14 @@ Climate Data/
 NASA FIRMS Dataset/
 Sentinel-2 Imagery/
 miniconda.sh
+miniconda_new.sh
+*.tar.xz
+node-v20.11.0-linux-x64/
+node-v22.13.1-linux-x64/
+
+# Logs and PIDs
+*.log
+*.pid
+backend/model.pkl
+backend/artifacts/model.pkl
+prototype_app/model.pkl
