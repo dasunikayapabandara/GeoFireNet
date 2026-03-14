@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import Navbar from './components/Navbar';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
 import MapComponent from './features/map/MapComponent';
 import DashboardOverview from './features/dashboard/DashboardOverview';
 import ReactiveCapture from './features/reactive/ReactiveCapture';
@@ -40,10 +41,13 @@ function App() {
 
   return (
     <div className="app-container">
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="content-area">
-        {renderContent()}
-      </main>
+      <Header />
+      <div className="main-layout">
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <main className="content-area">
+          {renderContent()}
+        </main>
+      </div>
       <Footer />
     </div>
   );
