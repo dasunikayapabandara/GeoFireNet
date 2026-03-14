@@ -1,4 +1,7 @@
-from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi import FastAPI, HTTPException, File, UploadFile, Depends
+from sqlalchemy.orm import Session
+from backend.database import get_db
+from backend import schemas, crud
 from pydantic import BaseModel, field_validator
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -84,7 +87,7 @@ class RiskPrediction(BaseModel):
     system_status: SystemMode
 
 @app.post("/predict", response_model=RiskPrediction)
-async def predict_risk(features: WildfireFeatures):
+async def predict_risk(features: WildfireFeatures, db: Session = Depends(get_db)):
     if CURRENT_MODE == SystemMode.DEGRADED:
         # Strict fallback
         return {
@@ -106,6 +109,25 @@ async def predict_risk(features: WildfireFeatures):
             veg_moisture=features.veg_moisture
         )
         result["system_status"] = CURRENT_MODE
+        
+        # --- Save to PostgreSQL Database ---
+        db_weather = crud.create_weather_input(db, schemas.WeatherInputCreate(
+            temp=features.temp,
+            humidity=features.humidity,
+            wind=features.wind,
+            veg_moisture=features.veg_moisture
+        ))
+        
+        crud.create_prediction_log(db, schemas.RiskPredictionLogCreate(
+            risk_score=result["risk_score"],
+            risk_probability=result["risk_probability"],
+            risk_level=result["risk_level"],
+            baseline_score=result["baseline_score"],
+            system_status=result.get("system_status"),
+            primary_drivers=", ".join(result["primary_drivers"]),
+            weather_input_id=db_weather.id
+        ))
+        
         return result
     except Exception as e:
         print(f"Prediction API Error: {e}")
@@ -144,6 +166,15 @@ async def predict_reactive(file: UploadFile = File(...)):
     except Exception as e:
         print(f"REACTIVE API ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/history", response_model=list[schemas.RiskPredictionLog])
+async def get_history(limit: int = 50, db: Session = Depends(get_db)):
+    """Fetch the latest predictions saved in the database."""
+    try:
+        return crud.get_prediction_history(db, limit=limit)
+    except Exception as e:
+        print(f"History API Error: {e}")
+        raise HTTPException(status_code=500, detail="Database lookup failed")
 
 if __name__ == "__main__":
     import uvicorn
