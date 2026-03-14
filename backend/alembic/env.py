@@ -67,11 +67,12 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    # Override the sqlalchemy.url dynamically using our .env loaded previously
+    # Override the sqlalchemy.url dynamically using our strongly typed settings
     config_section = config.get_section(config.config_ini_section)
-    db_url = os.environ.get("DATABASE_URL")
-    if db_url:
-        config_section["sqlalchemy.url"] = db_url
+    from backend.config_db import settings
+    
+    if settings.database_url:
+        config_section["sqlalchemy.url"] = settings.database_url
         
     connectable = engine_from_config(
         config_section,

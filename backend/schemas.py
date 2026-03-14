@@ -33,6 +33,50 @@ class WeatherInput(WeatherInputBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ModelVersionBase(BaseModel):
+    version_name: str
+    accuracy_metrics: Optional[str] = None
+    is_active: bool = False
+
+class ModelVersionCreate(ModelVersionBase):
+    pass
+
+class ModelVersion(ModelVersionBase):
+    id: int
+    training_date: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AlertBase(BaseModel):
+    alert_level: str
+    message: str
+    is_acknowledged: bool = False
+    acknowledged_by: Optional[str] = None
+    acknowledged_at: Optional[datetime] = None
+
+class AlertCreate(AlertBase):
+    prediction_id: int
+
+class Alert(AlertBase):
+    id: int
+    timestamp: datetime
+    prediction_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SystemLogBase(BaseModel):
+    action: str
+    details: Optional[str] = None
+
+class SystemLogCreate(SystemLogBase):
+    pass
+
+class SystemLog(SystemLogBase):
+    id: int
+    timestamp: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
 class RiskPredictionLogBase(BaseModel):
     risk_score: float
     risk_probability: float
@@ -44,15 +88,20 @@ class RiskPredictionLogBase(BaseModel):
 class RiskPredictionLogCreate(RiskPredictionLogBase):
     location_id: Optional[int] = None
     weather_input_id: int
+    model_version_id: Optional[int] = None
 
 class RiskPredictionLog(RiskPredictionLogBase):
     id: int
     timestamp: datetime
     location_id: Optional[int] = None
     weather_input_id: int
+    model_version_id: Optional[int] = None
     
     # Nested for deep history return
     weather_input: WeatherInput
     location: Optional[Location] = None
+    model_version: Optional[ModelVersion] = None
+    alert: Optional[Alert] = None
     
     model_config = ConfigDict(from_attributes=True)
+

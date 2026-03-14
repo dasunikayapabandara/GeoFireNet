@@ -118,15 +118,27 @@ async def predict_risk(features: WildfireFeatures, db: Session = Depends(get_db)
             veg_moisture=features.veg_moisture
         ))
         
-        crud.create_prediction_log(db, schemas.RiskPredictionLogCreate(
+        # Get active model version to link providence
+        active_model = crud.get_active_model_version(db)
+        
+        prediction_log = crud.create_prediction_log(db, schemas.RiskPredictionLogCreate(
             risk_score=result["risk_score"],
             risk_probability=result["risk_probability"],
             risk_level=result["risk_level"],
             baseline_score=result["baseline_score"],
             system_status=result.get("system_status"),
             primary_drivers=", ".join(result["primary_drivers"]),
-            weather_input_id=db_weather.id
+            weather_input_id=db_weather.id,
+            model_version_id=active_model.id if active_model else None
         ))
+        
+        # --- Auto-generate Alerts for High Risk ---
+        if result["risk_level"] in ["High", "Extreme"]:
+            crud.create_alert(db, schemas.AlertCreate(
+                prediction_id=prediction_log.id,
+                alert_level=result["risk_level"],
+                message=f"Automatic {result['risk_level']} alert triggered by model parameters: {', '.join(result['primary_drivers'])}"
+            ))
         
         return result
     except Exception as e:
@@ -175,6 +187,39 @@ async def get_history(limit: int = 50, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"History API Error: {e}")
         raise HTTPException(status_code=500, detail="Database lookup failed")
+
+@app.get("/alerts", response_model=list[schemas.Alert])
+async def get_alerts(limit: int = 20, db: Session = Depends(get_db)):
+    """Fetch recent automated alerts."""
+    return crud.get_recent_alerts(db, limit=limit)
+
+@app.get("/models", response_model=list[schemas.ModelVersion])
+async def get_models(db: Session = Depends(get_db)):
+    """Fetch provenance logs of trained models."""
+    return crud.get_model_versions(db)
+
+@app.get("/analytics/risk_summary")
+async def get_risk_summary(db: Session = Depends(get_db)):
+    """Demonstrate relational analytics for the Dashboard."""
+    from sqlalchemy import func
+    from backend import models
+    try:
+        results = db.query(
+            models.RiskPredictionLog.risk_level, 
+            func.count(models.RiskPredictionLog.id)
+        ).group_by(models.RiskPredictionLog.risk_level).all()
+        return [{"risk_level": r[0], "count": r[1]} for r in results]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+async def health_check(db: Session = Depends(get_db)):
+    try:
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception:
+        return {"status": "degraded", "database": "disconnected"}
 
 if __name__ == "__main__":
     import uvicorn

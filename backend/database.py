@@ -1,14 +1,9 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
+from backend.config_db import settings
 
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is mapping. Check .env file.")
+DATABASE_URL = settings.database_url
 
 # Create the SQLAlchemy engine
 # pool_pre_ping=True helps detect disconnected databases early
