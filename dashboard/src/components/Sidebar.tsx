@@ -1,5 +1,6 @@
 import React from 'react';
 import { LayoutDashboard, Map, BarChart3, Settings, LogOut, Camera, PlaySquare, Bell, Clock, Info } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import '../styles/Sidebar.css';
 
 interface SidebarProps {
@@ -8,6 +9,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+    const { logout } = useAuth();
+
     const menuItems = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
         { id: 'map', icon: Map, label: 'Live Map' },
@@ -39,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
             </nav>
 
             <div className="sidebar-footer">
-                <button className="nav-link logout-btn">
+                <button className="nav-link logout-btn" onClick={logout}>
                     <LogOut size={20} />
                     <span className="nav-label">Logout</span>
                 </button>

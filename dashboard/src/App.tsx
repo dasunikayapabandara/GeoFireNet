@@ -9,11 +9,14 @@ import Alerts from './pages/Alerts';
 import Analytics from './pages/Analytics';
 import History from './pages/History';
 import About from './pages/About';
+import Login from './pages/Login';
+import { useAuth } from './context/AuthContext';
 import './styles/App.css';
 
 import Footer from './components/Footer';
 
 function App() {
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const renderContent = () => {
@@ -38,6 +41,10 @@ function App() {
         return <div className="p-6"><h2>Page Not Found</h2></div>;
     }
   };
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   return (
     <div className="app-container">
