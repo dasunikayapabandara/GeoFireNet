@@ -40,11 +40,6 @@ interface ApiRiskResponse {
 // Global state to track status (Naive implementation for demo)
 export let currentSystemStatus: string = 'UNKNOWN';
 
-const mockAlerts: Alert[] = [
-    { id: '1', title: 'High Wind Warning', description: 'Gusts up to 45mph in Northern Sector.', timestamp: '2h ago', severity: 'high' },
-    { id: '2', title: 'Dry Lightning Potential', description: 'Forecasted for late afternoon.', timestamp: '4h ago', severity: 'moderate' },
-];
-
 const mockChartData: RiskChartData = {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
@@ -161,9 +156,45 @@ export const RiskService = {
         ];
     },
     getAlerts: async (): Promise<Alert[]> => {
-        return new Promise((resolve) => setTimeout(() => resolve(mockAlerts), 500));
+        try {
+            const response = await fetch('http://localhost:8000/alerts?limit=10');
+            if (!response.ok) throw new Error('API Error');
+            const data = await response.json();
+
+            return data.map((alert: any) => ({
+                id: alert.id.toString(),
+                title: `${alert.alert_level} Risk Alert`,
+                description: alert.message,
+                timestamp: new Date(alert.timestamp).toLocaleString(),
+                severity: alert.alert_level.toLowerCase() as 'moderate' | 'high' | 'extreme'
+            }));
+        } catch (e) {
+            console.error(e);
+            return [];
+        }
     },
     getRiskTrend: async (): Promise<RiskChartData> => {
+        // Keeps mock trend for the dashboard layout visual for now until a specific /trend endpoint is made
         return new Promise((resolve) => setTimeout(() => resolve(mockChartData), 800));
+    },
+    getRiskSummary: async (): Promise<{ risk_level: string, count: number }[]> => {
+        try {
+            const response = await fetch('http://localhost:8000/analytics/risk_summary');
+            if (!response.ok) throw new Error('API Error');
+            return await response.json();
+        } catch (e) {
+            console.error(e);
+            return [];
+        }
+    },
+    getHistory: async (): Promise<any[]> => {
+        try {
+            const response = await fetch('http://localhost:8000/history?limit=50');
+            if (!response.ok) throw new Error('API Error');
+            return await response.json();
+        } catch (e) {
+            console.error(e);
+            return [];
+        }
     }
 };
