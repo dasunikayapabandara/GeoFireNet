@@ -5,13 +5,7 @@
     width: 100vw;
     background-color: var(--bg-primary);
     color: var(--text-primary);
-}
-
-.main-layout {
-    display: flex;
-    flex: 1;
     overflow: hidden;
-    /* Prevent body scroll, handle inside content-area */
 }
 
 .content-area {
