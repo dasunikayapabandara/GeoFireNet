@@ -1,8 +1,35 @@
-import React from 'react';
-import { Flame, Bell, User, ShieldCheck } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Flame, Bell, User, ShieldCheck, ChevronDown } from 'lucide-react';
 import '../styles/Header.css';
+import { useAuth } from '../context/AuthContext';
 
 const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTab }) => {
+    const { logout } = useAuth();
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        if (isDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isDropdownOpen]);
+
+    const toggleDropdown = () => {
+        setIsDropdownOpen(!isDropdownOpen);
+    };
+
     return (
         <header className="header">
             <div className="header-logo" onClick={() => setActiveTab('dashboard')} style={{ cursor: 'pointer' }}>
@@ -19,11 +46,27 @@ const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTa
                     <Bell size={20} />
                     <span className="notification-badge">3</span>
                 </button>
-                <div className="user-profile">
-                    <div className="avatar">
-                        <User size={20} />
+                <div className="user-profile-wrapper" ref={dropdownRef}>
+                    <div className="user-info-container" onClick={toggleDropdown}>
+                        <div className="avatar">
+                            <User size={20} />
+                        </div>
+                        <div className="user-details">
+                            <span className="username">Fire Analyst</span>
+                            <span className="user-email">admin@geofirenet.com</span>
+                        </div>
+                        <ChevronDown size={16} className={`dropdown-icon ${isDropdownOpen ? 'open' : ''}`} />
                     </div>
-                    <span className="username">Fire Analyst</span>
+
+                    {isDropdownOpen && (
+                        <div className="profile-dropdown-menu">
+                            <ul className="dropdown-list">
+                                <li className="dropdown-item text-danger" onClick={logout}>
+                                    Log out
+                                </li>
+                            </ul>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>
