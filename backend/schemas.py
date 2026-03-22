@@ -8,6 +8,10 @@ from typing import Optional, List
 
 class LocationBase(BaseModel):
     name: Optional[str] = None
+    continent: Optional[str] = None
+    country: Optional[str] = None
+    admin_region: Optional[str] = None
+    local_region: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
@@ -102,6 +106,24 @@ class RiskPredictionLog(RiskPredictionLogBase):
     location: Optional[Location] = None
     model_version: Optional[ModelVersion] = None
     alert: Optional[Alert] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ActiveDetectionLogBase(BaseModel):
+    detection_source: str
+    confidence_score: float
+    fire_radiative_power_mw: Optional[float] = None
+    containment_status: str = "Active"
+
+class ActiveDetectionLogCreate(ActiveDetectionLogBase):
+    location_id: int
+
+class ActiveDetectionLog(ActiveDetectionLogBase):
+    id: int
+    timestamp: datetime
+    location_id: int
+    location: Optional[Location] = None
     
     model_config = ConfigDict(from_attributes=True)
 

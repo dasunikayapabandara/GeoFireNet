@@ -8,11 +8,16 @@ class Location(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=True) # e.g. "Sacramento", or null if just coords
+    continent = Column(String, index=True, nullable=True)
+    country = Column(String, index=True, nullable=True)
+    admin_region = Column(String, index=True, nullable=True)
+    local_region = Column(String, index=True, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
 
     # Relationships
     predictions = relationship("RiskPredictionLog", back_populates="location")
+    detections = relationship("ActiveDetectionLog", back_populates="location")
 
 
 class WeatherInput(Base):
@@ -97,3 +102,20 @@ class SystemLog(Base):
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
     action = Column(String, nullable=False) # e.g., "STARTUP", "REACTIVE_PREDICT"
     details = Column(String, nullable=True)
+
+
+class ActiveDetectionLog(Base):
+    """Logs for confirmed active fires sourced from external feeds."""
+    __tablename__ = "active_detection_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    location_id = Column(Integer, ForeignKey("locations.id"), nullable=False)
+    
+    detection_source = Column(String, nullable=False) # 'MODIS', 'VIIRS', 'Local Sensor'
+    confidence_score = Column(Float, nullable=False)
+    fire_radiative_power_mw = Column(Float, nullable=True)
+    containment_status = Column(String, default="Active") # 'Active', 'Contained'
+    
+    # Relationships
+    location = relationship("Location", back_populates="detections")

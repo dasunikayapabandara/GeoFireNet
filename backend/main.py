@@ -180,13 +180,27 @@ async def predict_reactive(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/history", response_model=list[schemas.RiskPredictionLog])
-async def get_history(limit: int = 50, db: Session = Depends(get_db)):
-    """Fetch the latest predictions saved in the database."""
+async def get_history(limit: int = 50, country: str = None, admin_region: str = None, db: Session = Depends(get_db)):
+    """Fetch the latest predictions saved in the database, with optional global filtering."""
     try:
-        return crud.get_prediction_history(db, limit=limit)
+        return crud.get_prediction_history(db, limit=limit, country=country, admin_region=admin_region)
     except Exception as e:
         print(f"History API Error: {e}")
         raise HTTPException(status_code=500, detail="Database lookup failed")
+
+@app.get("/detections", response_model=list[schemas.ActiveDetectionLog])
+async def get_active_detections(limit: int = 100, country: str = None, admin_region: str = None, db: Session = Depends(get_db)):
+    """Fetch confirmed active fires globally or by region."""
+    try:
+        return crud.get_active_detections(db, limit=limit, country=country, admin_region=admin_region)
+    except Exception as e:
+        print(f"Detection API Error: {e}")
+        raise HTTPException(status_code=500, detail="Database lookup failed")
+
+@app.post("/detections", response_model=schemas.ActiveDetectionLog)
+async def create_active_detection(detection: schemas.ActiveDetectionLogCreate, db: Session = Depends(get_db)):
+    """Ingest a new confirmed active fire detection (e.g., from MODIS feed)."""
+    return crud.create_active_detection(db, detection)
 
 @app.get("/alerts", response_model=list[schemas.Alert])
 async def get_alerts(limit: int = 20, db: Session = Depends(get_db)):
@@ -198,17 +212,35 @@ async def get_models(db: Session = Depends(get_db)):
     """Fetch provenance logs of trained models."""
     return crud.get_model_versions(db)
 
-@app.get("/analytics/risk_summary")
-async def get_risk_summary(db: Session = Depends(get_db)):
-    """Demonstrate relational analytics for the Dashboard."""
+@app.get("/analytics/global_summary")
+async def get_global_summary(country: str = None, admin_region: str = None, db: Session = Depends(get_db)):
+    """Global Analytics Summary endpoint combining predicted and active data."""
     from sqlalchemy import func
     from backend import models
     try:
-        results = db.query(
-            models.RiskPredictionLog.risk_level, 
-            func.count(models.RiskPredictionLog.id)
-        ).group_by(models.RiskPredictionLog.risk_level).all()
-        return [{"risk_level": r[0], "count": r[1]} for r in results]
+        # Build base queries
+        pred_q = db.query(models.RiskPredictionLog.risk_level, func.count(models.RiskPredictionLog.id))
+        det_q = db.query(models.ActiveDetectionLog.containment_status, func.count(models.ActiveDetectionLog.id))
+        
+        # Apply hierarchical filters if requested
+        if country or admin_region:
+            pred_q = pred_q.join(models.Location, models.RiskPredictionLog.location_id == models.Location.id)
+            det_q = det_q.join(models.Location, models.ActiveDetectionLog.location_id == models.Location.id)
+            if country:
+                pred_q = pred_q.filter(models.Location.country == country)
+                det_q = det_q.filter(models.Location.country == country)
+            if admin_region:
+                pred_q = pred_q.filter(models.Location.admin_region == admin_region)
+                det_q = det_q.filter(models.Location.admin_region == admin_region)
+
+        # Execute
+        pred_results = pred_q.group_by(models.RiskPredictionLog.risk_level).all()
+        det_results = det_q.group_by(models.ActiveDetectionLog.containment_status).all()
+        
+        return {
+            "predictions_summary": [{"level": r[0], "count": r[1]} for r in pred_results],
+            "active_detections_summary": [{"status": r[0], "count": r[1]} for r in det_results]
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -40,8 +40,36 @@ def create_prediction_log(db: Session, log: schemas.RiskPredictionLogCreate):
     db.refresh(db_log)
     return db_log
 
-def get_prediction_history(db: Session, limit: int = 50):
-    return db.query(models.RiskPredictionLog).order_by(models.RiskPredictionLog.timestamp.desc()).limit(limit).all()
+def get_prediction_history(db: Session, limit: int = 50, country: str = None, admin_region: str = None):
+    query = db.query(models.RiskPredictionLog)
+    
+    if country or admin_region:
+        query = query.join(models.Location, models.RiskPredictionLog.location_id == models.Location.id)
+        if country:
+            query = query.filter(models.Location.country == country)
+        if admin_region:
+            query = query.filter(models.Location.admin_region == admin_region)
+            
+    return query.order_by(models.RiskPredictionLog.timestamp.desc()).limit(limit).all()
+
+def create_active_detection(db: Session, detection: schemas.ActiveDetectionLogCreate):
+    db_detection = models.ActiveDetectionLog(**detection.model_dump())
+    db.add(db_detection)
+    db.commit()
+    db.refresh(db_detection)
+    return db_detection
+
+def get_active_detections(db: Session, limit: int = 100, country: str = None, admin_region: str = None):
+    query = db.query(models.ActiveDetectionLog)
+    
+    if country or admin_region:
+        query = query.join(models.Location, models.ActiveDetectionLog.location_id == models.Location.id)
+        if country:
+            query = query.filter(models.Location.country == country)
+        if admin_region:
+            query = query.filter(models.Location.admin_region == admin_region)
+            
+    return query.order_by(models.ActiveDetectionLog.timestamp.desc()).limit(limit).all()
 
 # --- Model Versions ---
 def create_model_version(db: Session, version: schemas.ModelVersionCreate):

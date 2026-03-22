@@ -10,14 +10,18 @@ const DashboardOverview: React.FC = () => {
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [chartData, setChartData] = useState<RiskChartData | undefined>(undefined);
     const [loading, setLoading] = useState(true);
+    const [countryFilter, setCountryFilter] = useState<string>('');
+    const [viewMode, setViewMode] = useState<'predictive' | 'active'>('predictive');
 
     useEffect(() => {
         const fetchData = async () => {
+            setLoading(true);
             try {
+                const query = countryFilter ? { country: countryFilter } : undefined;
                 const [metricsData, alertsData, trendData] = await Promise.all([
-                    RiskService.getMetrics(),
-                    RiskService.getAlerts(),
-                    RiskService.getRiskTrend()
+                    RiskService.getMetrics(query),
+                    RiskService.getAlerts(query),
+                    RiskService.getRiskTrend(query)
                 ]);
 
                 setMetrics(metricsData);
@@ -31,7 +35,7 @@ const DashboardOverview: React.FC = () => {
         };
 
         fetchData();
-    }, []);
+    }, [countryFilter, viewMode]);
 
     if (loading) {
         return <div className="dashboard-container flex-center">Loading Dashboard...</div>;
@@ -39,9 +43,38 @@ const DashboardOverview: React.FC = () => {
 
     return (
         <div className="dashboard-container">
-            <div className="dashboard-header">
-                <h2>Risk Overview</h2>
-                <span className="last-updated">Last Updated: Just now</span>
+            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <div>
+                    <h2>GeoFireNet Global Terminal</h2>
+                    <span className="last-updated">Real-time geospatial intelligence</span>
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.375rem', display: 'flex', gap: '0.5rem' }}>
+                        <button
+                            className={`btn ${viewMode === 'predictive' ? 'btn-primary' : 'btn-ghost'}`}
+                            onClick={() => setViewMode('predictive')}
+                        >Predictive Risk</button>
+                        <button
+                            className={`btn ${viewMode === 'active' ? 'btn-primary' : 'btn-ghost'}`}
+                            onClick={() => setViewMode('active')}
+                            style={{ background: viewMode === 'active' ? 'var(--accent-risk-extreme)' : 'transparent' }}
+                        >Active Detections</button>
+                    </div>
+                    <select
+                        title="Global Region Filter"
+                        value={countryFilter}
+                        onChange={(e) => setCountryFilter(e.target.value)}
+                        style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '0.375rem' }}
+                    >
+                        <option value="">World (Global Scale)</option>
+                        <option value="USA">United States</option>
+                        <option value="Australia">Australia</option>
+                        <option value="Greece">Greece</option>
+                        <option value="Portugal">Portugal</option>
+                        <option value="Canada">Canada</option>
+                        <option value="Brazil">Brazil</option>
+                    </select>
+                </div>
             </div>
 
             <div className="metrics-grid">

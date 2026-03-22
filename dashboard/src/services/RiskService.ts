@@ -1,4 +1,9 @@
 // Shared Types
+export interface LocationQuery {
+    country?: string;
+    admin_region?: string;
+}
+
 export interface RiskMetric {
     title: string;
     value: string | number;
@@ -27,7 +32,6 @@ export interface RiskChartData {
     }[];
 }
 
-// API Response Type
 interface ApiRiskResponse {
     risk_score: number;
     risk_level: string;
@@ -37,7 +41,6 @@ interface ApiRiskResponse {
     system_status: 'PRODUCTION' | 'SIMULATION' | 'DEGRADED';
 }
 
-// Global state to track status (Naive implementation for demo)
 export let currentSystemStatus: string = 'UNKNOWN';
 
 const mockChartData: RiskChartData = {
@@ -60,22 +63,18 @@ const mockChartData: RiskChartData = {
     ],
 };
 
-// Simulate Current Conditions (Napa Valley Default)
 const currentConditions = {
     temp: 35,
     humidity: 15,
     wind: 25,
-    veg_moisture: 0.2 // Renamed to match backend Pydantic model
+    veg_moisture: 0.2
 };
 
-// Fallback Logic (Client-Side)
 const calculateFallbackRisk = (temp: number, humidity: number, wind: number, veg: number): number => {
-    // ... (same as before)
     const n_temp = Math.min(temp / 50.0, 1);
     const n_hum = Math.min(humidity / 100.0, 1);
     const n_wind = Math.min(wind / 100.0, 1);
     const n_veg = Math.min(veg, 1);
-    // Linear Baseline Formula
     const score = (40 * n_temp) + (20 * n_wind) - (30 * n_hum) - (30 * n_veg) + 40;
     return Math.max(0, Math.min(score, 100));
 };
@@ -87,151 +86,163 @@ const getRiskStatus = (score: number): 'low' | 'moderate' | 'high' | 'extreme' =
     return 'extreme';
 };
 
-const mockHistoryData = [
-    { id: 1, timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), location: { name: 'Napa Valley Sector A' }, risk_level: 'Extreme', risk_probability: 0.92, primary_drivers: 'High Wind, Low Humidity' },
-    { id: 2, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), location: { name: 'Sonoma County Zone 3' }, risk_level: 'High', risk_probability: 0.78, primary_drivers: 'Dry Vegetation' },
-    { id: 3, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), location: { name: 'Mendocino Ridge' }, risk_level: 'Moderate', risk_probability: 0.45, primary_drivers: 'Elevated Temperature' },
-    { id: 4, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), location: { name: 'Lake County East' }, risk_level: 'Low', risk_probability: 0.15, primary_drivers: 'Normal Conditions' },
-    { id: 5, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), location: { name: 'Santa Cruz Mountains' }, risk_level: 'High', risk_probability: 0.81, primary_drivers: 'High Wind, Steep Terrain' }
+// --- MOCK GLOBAL DATA GENERATOR ---
+const MOCK_GLOBAL_LOCATIONS = [
+    { name: 'Napa Valley Sector A', country: 'USA', admin_region: 'California' },
+    { name: 'Sonoma County Zone 3', country: 'USA', admin_region: 'California' },
+    { name: 'Sydney Outskirts', country: 'Australia', admin_region: 'New South Wales' },
+    { name: 'Blue Mountains', country: 'Australia', admin_region: 'New South Wales' },
+    { name: 'Athens Suburbs', country: 'Greece', admin_region: 'Attica' },
+    { name: 'Faro District', country: 'Portugal', admin_region: 'Algarve' },
+    { name: 'Alberta Forests', country: 'Canada', admin_region: 'Alberta' },
+    { name: 'Amazon Basin Sector 1', country: 'Brazil', admin_region: 'Amazonas' }
 ];
 
-let nextId = 6;
+const mockHistoryData = MOCK_GLOBAL_LOCATIONS.slice(0, 5).map((loc, i) => ({
+    id: i + 1,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * i * 3).toISOString(),
+    location: loc,
+    risk_level: ['Low', 'Moderate', 'High', 'Extreme'][i % 4],
+    risk_probability: 0.1 + (i * 0.15),
+    primary_drivers: 'Dry Vegetation, High Wind'
+}));
+
+const mockActiveDetections: any[] = [];
+let nextId = 100;
+
 setInterval(() => {
-    const locations = ['Napa Valley Sector B', 'Sonoma Ridge', 'Lake County West', 'Mendocino Forest', 'Santa Cruz foothills', 'Marin Highlands'];
+    const randomLocation = MOCK_GLOBAL_LOCATIONS[Math.floor(Math.random() * MOCK_GLOBAL_LOCATIONS.length)];
     const risks = ['Low', 'Moderate', 'High', 'Extreme'];
-    const driversList = ['Dry Vegetation', 'High Wind', 'Elevated Temperature', 'Low Humidity', 'Normal Conditions'];
-
-    const randomLocation = locations[Math.floor(Math.random() * locations.length)];
     const randomRisk = risks[Math.floor(Math.random() * risks.length)];
-    const randomProbability = randomRisk === 'Extreme' ? 0.8 + Math.random() * 0.2 :
-        randomRisk === 'High' ? 0.6 + Math.random() * 0.2 :
-            randomRisk === 'Moderate' ? 0.3 + Math.random() * 0.3 :
-                Math.random() * 0.3;
-    const randomDriver = driversList[Math.floor(Math.random() * driversList.length)];
 
+    // Simulate Risk Prediction
     mockHistoryData.unshift({
         id: nextId++,
         timestamp: new Date().toISOString(),
-        location: { name: randomLocation },
+        location: randomLocation,
         risk_level: randomRisk,
-        risk_probability: randomProbability,
-        primary_drivers: randomDriver
+        risk_probability: Math.random(),
+        primary_drivers: 'Global Simulation Generator'
     });
+    if (mockHistoryData.length > 50) mockHistoryData.pop();
 
-    // Keep array size manageable
-    if (mockHistoryData.length > 50) {
-        mockHistoryData.pop();
+    // Randomly Simulate Active Detections (1/5 chance)
+    if (Math.random() > 0.8) {
+        mockActiveDetections.unshift({
+            id: nextId + 1000,
+            timestamp: new Date().toISOString(),
+            location: randomLocation,
+            detection_source: ['MODIS Satellite', 'VIIRS Sensor', 'Local Ground Hub'][Math.floor(Math.random() * 3)],
+            confidence_score: 0.8 + Math.random() * 0.19,
+            fire_radiative_power_mw: Math.random() * 500,
+            containment_status: 'Active'
+        });
+        if (mockActiveDetections.length > 50) mockActiveDetections.pop();
     }
 }, 5000);
 
 export const RiskService = {
-    getMetrics: async (): Promise<RiskMetric[]> => {
-        let mlScore: number;
-        let baselineScore: number;
-        let mlStatus: 'low' | 'moderate' | 'high' | 'extreme';
-        let baselineStatus: 'low' | 'moderate' | 'high' | 'extreme';
-        let drivers: string[] = [];
-
-        try {
-            // Validating Backend Connection
-            const response = await fetch('http://localhost:8000/predict', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(currentConditions)
-            });
-
-            if (!response.ok) throw new Error('API Error');
-
-            const data: ApiRiskResponse = await response.json();
-            mlScore = data.risk_score;
-            mlStatus = data.risk_level.toLowerCase() as 'low' | 'moderate' | 'high' | 'extreme';
-            baselineScore = data.baseline_score;
-            baselineStatus = data.baseline_level.toLowerCase() as 'low' | 'moderate' | 'high' | 'extreme';
-            drivers = data.primary_drivers || [];
-            currentSystemStatus = data.system_status; // Update global status
-
-        } catch (error) {
-            console.warn("Backend API unreachable. Using fallback logic.", error);
-            // Fallback: Calculate locally
-            baselineScore = calculateFallbackRisk(currentConditions.temp, currentConditions.humidity, currentConditions.wind, currentConditions.veg_moisture);
-            mlScore = baselineScore; // Fallback assumes they are same if model down
-            baselineStatus = getRiskStatus(baselineScore);
-            mlStatus = baselineStatus;
-            drivers = ["Data Unavailable"];
-            currentSystemStatus = 'DEGRADED (Client Fallback)';
-        }
-
+    getMetrics: async (query?: LocationQuery): Promise<RiskMetric[]> => {
+        let mlScore = calculateFallbackRisk(currentConditions.temp, currentConditions.humidity, currentConditions.wind, currentConditions.veg_moisture);
+        currentSystemStatus = 'DEGRADED (Client Fallback)';
         return [
             {
-                title: "Avg. Risk Score (ML)",
+                title: query?.country ? `Avg Risk: ${query.country}` : "Global Avg Risk",
                 value: `${Math.round(mlScore)}/100`,
-                change: drivers.length > 0 ? `Drivers: ${drivers[0]}` : "Stable",
-                trend: "up",
-                status: mlStatus
-            },
-            {
-                title: "Heuristic Baseline",
-                value: `${Math.round(baselineScore)}/100`,
-                change: "0%",
+                change: "Stable",
                 trend: "neutral",
-                status: baselineStatus
+                status: getRiskStatus(mlScore)
             },
-
             {
-                title: "Active Hotspots",
-                value: "14",
-                change: "+2",
+                title: "Active Hotspots globally",
+                value: mockActiveDetections.length.toString(),
                 trend: "up",
-                status: "moderate"
-            },
-            {
-                title: "Model Confidence",
-                value: "High",
-                trend: "neutral",
-                status: "low"
-            },
+                status: mockActiveDetections.length > 5 ? "high" : "low"
+            }
         ];
     },
-    getAlerts: async (): Promise<Alert[]> => {
+
+    getAlerts: async (query?: LocationQuery): Promise<Alert[]> => {
         try {
             const response = await fetch('http://localhost:8000/alerts?limit=10');
             if (!response.ok) throw new Error('API Error');
             const data = await response.json();
-
             return data.map((alert: any) => ({
                 id: alert.id.toString(),
                 title: `${alert.alert_level} Risk Alert`,
                 description: alert.message,
                 timestamp: new Date(alert.timestamp).toLocaleString(),
-                severity: alert.alert_level.toLowerCase() as 'moderate' | 'high' | 'extreme'
+                severity: alert.alert_level.toLowerCase()
             }));
         } catch (e) {
-            console.error(e);
             return [];
         }
     },
-    getRiskTrend: async (): Promise<RiskChartData> => {
-        // Keeps mock trend for the dashboard layout visual for now until a specific /trend endpoint is made
+
+    getRiskTrend: async (query?: LocationQuery): Promise<RiskChartData> => {
         return new Promise((resolve) => setTimeout(() => resolve(mockChartData), 800));
     },
-    getRiskSummary: async (): Promise<{ risk_level: string, count: number }[]> => {
+
+    getGlobalSummary: async (query?: LocationQuery): Promise<any> => {
+        let url = 'http://localhost:8000/analytics/global_summary';
+        const params = new URLSearchParams();
+        if (query?.country) params.append('country', query.country);
+        if (query?.admin_region) params.append('admin_region', query.admin_region);
+        if (params.toString()) url += `?${params.toString()}`;
+
         try {
-            const response = await fetch('http://localhost:8000/analytics/risk_summary');
+            const response = await fetch(url);
             if (!response.ok) throw new Error('API Error');
             return await response.json();
         } catch (e) {
-            console.error(e);
-            return [];
+            // Mock Fallback
+            return {
+                predictions_summary: [
+                    { level: 'Extreme', count: mockHistoryData.filter(d => d.risk_level === 'Extreme').length },
+                    { level: 'High', count: mockHistoryData.filter(d => d.risk_level === 'High').length }
+                ],
+                active_detections_summary: [
+                    { status: 'Active', count: mockActiveDetections.length }
+                ]
+            };
         }
     },
-    getHistory: async (): Promise<any[]> => {
+
+    getHistory: async (query?: LocationQuery): Promise<any[]> => {
+        let url = 'http://localhost:8000/history?limit=50';
+        const params = new URLSearchParams();
+        if (query?.country) params.append('country', query.country);
+        if (query?.admin_region) params.append('admin_region', query.admin_region);
+        if (params.toString()) url += `&${params.toString()}`;
+
         try {
-            const response = await fetch('http://localhost:8000/history?limit=50');
+            const response = await fetch(url);
             if (!response.ok) throw new Error('API Error');
             return await response.json();
         } catch (e) {
-            console.warn("Backend API unreachable. Using fallback historical data.", e);
-            return mockHistoryData;
+            return mockHistoryData.filter(d =>
+                (!query?.country || d.location.country === query.country) &&
+                (!query?.admin_region || d.location.admin_region === query.admin_region)
+            );
+        }
+    },
+
+    getActiveDetections: async (query?: LocationQuery): Promise<any[]> => {
+        let url = 'http://localhost:8000/detections?limit=100';
+        const params = new URLSearchParams();
+        if (query?.country) params.append('country', query.country);
+        if (query?.admin_region) params.append('admin_region', query.admin_region);
+        if (params.toString()) url += `&${params.toString()}`;
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('API Error');
+            return await response.json();
+        } catch (e) {
+            return mockActiveDetections.filter(d =>
+                (!query?.country || d.location.country === query.country) &&
+                (!query?.admin_region || d.location.admin_region === query.admin_region)
+            );
         }
     }
 };

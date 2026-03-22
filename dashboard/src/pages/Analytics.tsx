@@ -59,7 +59,8 @@ const chartOptions = {
 const Analytics: React.FC = () => {
     // Filters State
     const [timeRange, setTimeRange] = useState('7d');
-    const [region, setRegion] = useState('All');
+    const [region, setRegion] = useState('');
+    const [isDetectionMode, setIsDetectionMode] = useState(false);
 
     // Mock Data Generators for Dashboard
     const trendData = {
@@ -123,7 +124,7 @@ const Analytics: React.FC = () => {
                 <div className="filters-bar">
                     <div className="filter-group">
                         <Filter size={18} color="var(--text-secondary)" />
-                        <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
+                        <select title="Time Range Filter" value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
                             <option value="24h">Last 24 Hours</option>
                             <option value="7d">Last 7 Days</option>
                             <option value="30d">Last 30 Days</option>
@@ -131,11 +132,24 @@ const Analytics: React.FC = () => {
                     </div>
                     <div className="filter-group">
                         <Map size={18} color="var(--text-secondary)" />
-                        <select value={region} onChange={(e) => setRegion(e.target.value)}>
-                            <option value="All">All Regions</option>
-                            <option value="Napa">Napa Valley</option>
-                            <option value="Sonoma">Sonoma County</option>
+                        <select title="Region Filter" value={region} onChange={(e) => setRegion(e.target.value)}>
+                            <option value="">Global Coverage</option>
+                            <option value="USA">North America (USA)</option>
+                            <option value="Australia">Oceania (Australia)</option>
+                            <option value="Greece">Europe (Greece)</option>
                         </select>
+                    </div>
+                    <div className="filter-group" style={{ marginLeft: 'auto' }}>
+                        <button
+                            onClick={() => setIsDetectionMode(!isDetectionMode)}
+                            style={{
+                                background: isDetectionMode ? 'var(--accent-risk-extreme)' : 'var(--bg-tertiary)',
+                                padding: '0.5rem 1rem', borderRadius: '0.375rem',
+                                border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', color: 'white'
+                            }}
+                        >
+                            Mode: {isDetectionMode ? 'Live Active Detections' : 'Predictive Risk Algorithms'}
+                        </button>
                     </div>
                 </div>
             </div>
