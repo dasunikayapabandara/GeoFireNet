@@ -1,0 +1,184 @@
+.about-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    color: var(--text-primary);
+    overflow-y: auto;
+    height: 100%;
+}
+
+.about-header {
+    margin-bottom: 2.5rem;
+    text-align: center;
+}
+
+.about-header h1 {
+    font-size: 2.5rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.about-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.about-section {
+    margin-bottom: 3rem;
+}
+
+.about-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--accent-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+}
+
+.about-text {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+.about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+/* Risk Level Cards */
+.risk-card {
+    border-left: 4px solid;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.risk-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.risk-extreme {
+    border-color: var(--accent-risk-extreme);
+}
+
+.risk-extreme h3 {
+    color: var(--accent-risk-extreme);
+}
+
+.risk-high {
+    border-color: var(--accent-risk-high);
+}
+
+.risk-high h3 {
+    color: var(--accent-risk-high);
+}
+
+.risk-moderate {
+    border-color: var(--accent-risk-med);
+}
+
+.risk-moderate h3 {
+    color: var(--accent-risk-med);
+}
+
+.risk-low {
+    border-color: var(--accent-risk-low);
+}
+
+.risk-low h3 {
+    color: var(--accent-risk-low);
+}
+
+/* Workflow Steps */
+.workflow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: rgba(255, 255, 255, 0.02);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.step-icon {
+    background-color: var(--bg-tertiary);
+    padding: 0.75rem;
+    border-radius: 50%;
+    color: var(--accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-content h4 {
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+}
+
+.step-content p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Tech List */
+.tech-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.tech-list li {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Future List */
+.future-list {
+    list-style-type: disc;
+    padding-left: 1.25rem;
+    color: var(--text-secondary);
+}
+
+.future-list li {
+    margin-bottom: 0.5rem;
+}
+
+.info-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.info-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.info-card-icon {
+    color: var(--accent-primary);
+    margin-bottom: 0.5rem;
+}
