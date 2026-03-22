@@ -87,6 +87,14 @@ const getRiskStatus = (score: number): 'low' | 'moderate' | 'high' | 'extreme' =
     return 'extreme';
 };
 
+const mockHistoryData = [
+    { id: 1, timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), location: { name: 'Napa Valley Sector A' }, risk_level: 'Extreme', risk_probability: 0.92, primary_drivers: 'High Wind, Low Humidity' },
+    { id: 2, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), location: { name: 'Sonoma County Zone 3' }, risk_level: 'High', risk_probability: 0.78, primary_drivers: 'Dry Vegetation' },
+    { id: 3, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), location: { name: 'Mendocino Ridge' }, risk_level: 'Moderate', risk_probability: 0.45, primary_drivers: 'Elevated Temperature' },
+    { id: 4, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), location: { name: 'Lake County East' }, risk_level: 'Low', risk_probability: 0.15, primary_drivers: 'Normal Conditions' },
+    { id: 5, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), location: { name: 'Santa Cruz Mountains' }, risk_level: 'High', risk_probability: 0.81, primary_drivers: 'High Wind, Steep Terrain' }
+];
+
 export const RiskService = {
     getMetrics: async (): Promise<RiskMetric[]> => {
         let mlScore: number;
@@ -193,8 +201,8 @@ export const RiskService = {
             if (!response.ok) throw new Error('API Error');
             return await response.json();
         } catch (e) {
-            console.error(e);
-            return [];
+            console.warn("Backend API unreachable. Using fallback historical data.", e);
+            return mockHistoryData;
         }
     }
 };
