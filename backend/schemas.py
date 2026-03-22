@@ -52,19 +52,32 @@ class ModelVersion(ModelVersionBase):
 
 
 class AlertBase(BaseModel):
-    alert_level: str
-    message: str
-    is_acknowledged: bool = False
-    acknowledged_by: Optional[str] = None
-    acknowledged_at: Optional[datetime] = None
+    severity: str
+    alert_message: str
+    key_drivers: Optional[str] = None
 
 class AlertCreate(AlertBase):
     prediction_id: int
+    location_id: Optional[int] = None
+    risk_score: float
+
+class AlertUpdate(BaseModel):
+    status: str
 
 class Alert(AlertBase):
     id: int
-    timestamp: datetime
     prediction_id: int
+    location_id: Optional[int] = None
+    risk_score: float
+    status: str
+    triggered_at: datetime
+    acknowledged_at: Optional[datetime] = None
+    resolved_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+    
+    location: Optional[Location] = None
+    
     model_config = ConfigDict(from_attributes=True)
 
 

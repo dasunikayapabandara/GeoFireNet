@@ -76,22 +76,34 @@ class RiskPredictionLog(Base):
 
 
 class Alert(Base):
-    """Automatically generated alerts for high-risk predictions."""
+    """Automatically generated actionable alerts for high-risk predictions."""
     __tablename__ = "alerts"
 
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
     
+    # Core Relationships
     prediction_id = Column(Integer, ForeignKey("risk_prediction_logs.id"), nullable=False)
-    alert_level = Column(String, nullable=False) # "High" or "Extreme"
-    message = Column(String, nullable=False)
+    location_id = Column(Integer, ForeignKey("locations.id"), nullable=True)
     
-    is_acknowledged = Column(Boolean, default=False)
-    acknowledged_by = Column(String, nullable=True)
+    # Denormalized parameters for ultra-fast frontend rendering
+    risk_score = Column(Float, nullable=False)
+    severity = Column(String, nullable=False) # 'moderate', 'high', 'extreme'
+    alert_message = Column(String, nullable=False)
+    key_drivers = Column(String, nullable=True) # Summary explanation
+    
+    # Lifecycle Status
+    status = Column(String, default="active", index=True) # 'active', 'acknowledged', 'resolved'
+    
+    # Activity Timestamps
+    triggered_at = Column(DateTime, default=datetime.utcnow, index=True)
     acknowledged_at = Column(DateTime, nullable=True)
+    resolved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     prediction = relationship("RiskPredictionLog", back_populates="alert")
+    location = relationship("Location")
 
 
 class SystemLog(Base):

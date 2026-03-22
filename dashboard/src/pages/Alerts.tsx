@@ -1,93 +1,55 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     BellRing, AlertOctagon, CheckCircle2, ShieldAlert,
-    Filter, Map, Calendar, X, ThermometerSun, Wind, Droplets, Leaf
+    Map, X, ThermometerSun, Wind, Droplets, Leaf
 } from 'lucide-react';
+import { RiskService, type Alert } from '../services/RiskService';
 import '../styles/Alerts.css';
 
-interface AlertDetail {
-    id: string;
-    title: string;
-    description: string;
-    level: 'extreme' | 'high' | 'moderate';
-    region: string;
-    country: string;
-    timestamp: string;
-    score: number;
-    drivers: string[];
-    status: 'active' | 'resolved';
-    weather: {
-        temp: number;
-        humidity: number;
-        wind: number;
-        veg: number;
-    };
-}
-
-// Generate Realistic Mock Alert Data
-const generateMockAlerts = (): AlertDetail[] => {
-    return [
-        {
-            id: 'ALT-9021', title: 'Critical Wildfire Conditions', description: 'Immediate threat identified. Models predict highly volatile fire spread.',
-            level: 'extreme', region: 'California', country: 'USA', timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-            score: 94, drivers: ['High Temperature', 'Severe Drought'], status: 'active',
-            weather: { temp: 42, humidity: 8, wind: 45, veg: 0.15 }
-        },
-        {
-            id: 'ALT-9020', title: 'Elevated Risk Pre-ignition', description: 'Vegetation moisture dropped below baseline thresholds. Expect elevated ignition risk.',
-            level: 'high', region: 'New South Wales', country: 'Australia', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-            score: 82, drivers: ['Dry Vegetation', 'High Wind'], status: 'active',
-            weather: { temp: 37, humidity: 12, wind: 60, veg: 0.22 }
-        },
-        {
-            id: 'ALT-9019', title: 'Moderate Dry Spell', description: 'Monitoring required. Dry conditions present but wind speeds are nominal.',
-            level: 'moderate', region: 'Attica', country: 'Greece', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-            score: 55, drivers: ['Low Humidity'], status: 'active',
-            weather: { temp: 32, humidity: 20, wind: 15, veg: 0.40 }
-        },
-        {
-            id: 'ALT-9018', title: 'High Wind Warning', description: 'Gale force winds expanding across dry brush zones.',
-            level: 'high', region: 'Algarve', country: 'Portugal', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-            score: 78, drivers: ['High Wind'], status: 'resolved',
-            weather: { temp: 28, humidity: 25, wind: 85, veg: 0.35 }
-        },
-        {
-            id: 'ALT-9017', title: 'Extreme Heat Dome', description: 'Multi-day heatwave causing explosive drying in top-soil.',
-            level: 'extreme', region: 'Alberta', country: 'Canada', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-            score: 91, drivers: ['High Temperature'], status: 'resolved',
-            weather: { temp: 38, humidity: 15, wind: 20, veg: 0.18 }
-        }
-    ];
-};
-
 const Alerts: React.FC = () => {
-    const [alerts, setAlerts] = useState<AlertDetail[]>(generateMockAlerts());
+    const [alerts, setAlerts] = useState<any[]>([]);
+    const [summary, setSummary] = useState<any>({ active_total: 0, active_extreme: 0, active_high: 0, generated_today: 0 });
+    const [loading, setLoading] = useState(true);
     const [levelFilter, setLevelFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('active');
     const [regionFilter, setRegionFilter] = useState('');
 
     // Modal Details State
-    const [selectedAlert, setSelectedAlert] = useState<AlertDetail | null>(null);
+    const [selectedAlert, setSelectedAlert] = useState<any | null>(null);
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        const data = await RiskService.getAlerts({ country: regionFilter || undefined });
+        const sumData = await RiskService.getAlertsSummary();
+        setAlerts(data);
+        setSummary(sumData);
+        setLoading(false);
+    }, [regionFilter]);
+
+    useEffect(() => {
+        fetchData();
+        // Fallback polling for the dashboard showcase
+        const interval = setInterval(fetchData, 10000);
+        return () => clearInterval(interval);
+    }, [fetchData]);
 
     // Filter Logic
     const filteredAlerts = useMemo(() => {
         return alerts.filter(a => {
-            if (levelFilter && a.level !== levelFilter) return false;
+            if (levelFilter && a.severity !== levelFilter) return false;
             if (statusFilter && a.status !== statusFilter) return false;
-            if (regionFilter && a.country !== regionFilter) return false;
             return true;
         });
-    }, [alerts, levelFilter, statusFilter, regionFilter]);
+    }, [alerts, levelFilter, statusFilter]);
 
-    // Metrics
-    const activeCount = alerts.filter(a => a.status === 'active').length;
-    const extremeCount = alerts.filter(a => a.level === 'extreme' && a.status === 'active').length;
-    const highCount = alerts.filter(a => a.level === 'high' && a.status === 'active').length;
-
-    const resolveAlert = (id: string) => {
-        setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'resolved' } : a));
-        if (selectedAlert && selectedAlert.id === id) {
-            setSelectedAlert({ ...selectedAlert, status: 'resolved' });
+    const resolveAlert = async (id: string) => {
+        const success = await RiskService.resolveAlert(id);
+        if (success) {
+            setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'resolved' } : a));
+            if (selectedAlert && selectedAlert.id === id) {
+                setSelectedAlert({ ...selectedAlert, status: 'resolved' });
+            }
+            fetchData();
         }
     };
 
@@ -112,19 +74,19 @@ const Alerts: React.FC = () => {
             <div className="alerts-summary-grid">
                 <div className="alert-metric-card">
                     <span className="alert-metric-title">Total Active Alerts</span>
-                    <span className="alert-metric-val">{activeCount}</span>
+                    <span className="alert-metric-val">{summary.active_total}</span>
                 </div>
                 <div className="alert-metric-card" style={{ borderBottom: '4px solid var(--accent-risk-extreme)' }}>
                     <span className="alert-metric-title">Active Extreme Risk</span>
-                    <span className="alert-metric-val" style={{ color: 'var(--accent-risk-extreme)' }}>{extremeCount}</span>
+                    <span className="alert-metric-val" style={{ color: 'var(--accent-risk-extreme)' }}>{summary.active_extreme}</span>
                 </div>
                 <div className="alert-metric-card" style={{ borderBottom: '4px solid var(--accent-risk-high)' }}>
                     <span className="alert-metric-title">Active High Risk</span>
-                    <span className="alert-metric-val" style={{ color: 'var(--accent-risk-high)' }}>{highCount}</span>
+                    <span className="alert-metric-val" style={{ color: 'var(--accent-risk-high)' }}>{summary.active_high}</span>
                 </div>
                 <div className="alert-metric-card">
                     <span className="alert-metric-title">Alerts Generated Today</span>
-                    <span className="alert-metric-val">12</span>
+                    <span className="alert-metric-val">{summary.generated_today}</span>
                 </div>
             </div>
 
@@ -145,6 +107,7 @@ const Alerts: React.FC = () => {
                         <option value="">All Statuses</option>
                         <option value="active">Active</option>
                         <option value="resolved">Resolved</option>
+                        <option value="acknowledged">Acknowledged</option>
                     </select>
                 </div>
                 <div className="alerts-filter-group">
@@ -158,8 +121,9 @@ const Alerts: React.FC = () => {
                         <option value="Canada">Canada</option>
                     </select>
                 </div>
-                <div style={{ marginLeft: 'auto' }}>
-                    <button className="btn btn-ghost" onClick={() => setAlerts(generateMockAlerts())}>Refresh Data</button>
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {loading && <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Fetching...</span>}
+                    <button className="btn btn-ghost" onClick={fetchData}>Refresh Data</button>
                 </div>
             </div>
 
@@ -173,13 +137,13 @@ const Alerts: React.FC = () => {
                     </div>
                 ) : (
                     filteredAlerts.map(alert => (
-                        <div key={alert.id} className={`alert-card-row ${alert.level}`} onClick={() => setSelectedAlert(alert)}>
+                        <div key={alert.id} className={`alert-card-row ${alert.severity}`} onClick={() => setSelectedAlert(alert)}>
                             <div className="alert-icon-col">
-                                {getIconForLevel(alert.level)}
+                                {getIconForLevel(alert.severity)}
                             </div>
                             <div className="alert-main-col">
                                 <h3>{alert.title}</h3>
-                                <p>{alert.id}</p>
+                                <p>ID: {alert.id}</p>
                             </div>
                             <div className="alert-meta-col">
                                 <span className="alert-label">Location</span>
@@ -191,7 +155,7 @@ const Alerts: React.FC = () => {
                             </div>
                             <div className="alert-meta-col">
                                 <span className="alert-label">Risk Score</span>
-                                <span className="alert-val" style={{ color: alert.level === 'extreme' ? 'var(--accent-risk-extreme)' : 'var(--text-primary)' }}>{alert.score}/100</span>
+                                <span className="alert-val" style={{ color: alert.severity === 'extreme' ? 'var(--accent-risk-extreme)' : 'var(--text-primary)' }}>{alert.score.toFixed(1)}/100</span>
                             </div>
                             <div className="alert-meta-col">
                                 <span className="alert-label">Status</span>
@@ -212,15 +176,15 @@ const Alerts: React.FC = () => {
                         <div className="modal-header">
                             <div>
                                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                    <span className={`badge badge-${selectedAlert.level}`}>{selectedAlert.level.toUpperCase()}</span>
+                                    <span className={`badge badge-${selectedAlert.severity}`}>{selectedAlert.severity.toUpperCase()}</span>
                                     <span className={`badge badge-${selectedAlert.status}`}>{selectedAlert.status.toUpperCase()}</span>
                                 </div>
-                                <h2>{selectedAlert.title} ({selectedAlert.id})</h2>
+                                <h2>{selectedAlert.title} </h2>
                                 <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                                     {selectedAlert.region}, {selectedAlert.country} • {new Date(selectedAlert.timestamp).toLocaleString()}
                                 </p>
                             </div>
-                            <button className="close-btn" onClick={() => setSelectedAlert(null)}>
+                            <button className="close-btn" onClick={() => setSelectedAlert(null)} title="Close Modal">
                                 <X size={24} />
                             </button>
                         </div>

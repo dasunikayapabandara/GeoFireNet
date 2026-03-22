@@ -93,16 +93,29 @@ def create_alert(db: Session, alert: schemas.AlertCreate):
     db.refresh(db_alert)
     return db_alert
 
-def get_recent_alerts(db: Session, limit: int = 20):
-    return db.query(models.Alert).order_by(models.Alert.timestamp.desc()).limit(limit).all()
+def get_alerts(db: Session, limit: int = 50, status: str = None, severity: str = None, country: str = None):
+    query = db.query(models.Alert)
+    
+    if status:
+        query = query.filter(models.Alert.status == status)
+    if severity:
+        query = query.filter(models.Alert.severity == severity)
+        
+    if country:
+        query = query.join(models.Location, models.Alert.location_id == models.Location.id)
+        query = query.filter(models.Location.country == country)
+        
+    return query.order_by(models.Alert.triggered_at.desc()).limit(limit).all()
 
-def acknowledge_alert(db: Session, alert_id: int, user: str):
+def update_alert_status(db: Session, alert_id: int, status: str):
     db_alert = db.query(models.Alert).filter(models.Alert.id == alert_id).first()
     if db_alert:
         from datetime import datetime
-        db_alert.is_acknowledged = True
-        db_alert.acknowledged_by = user
-        db_alert.acknowledged_at = datetime.utcnow()
+        db_alert.status = status
+        if status == 'acknowledged':
+            db_alert.acknowledged_at = datetime.utcnow()
+        elif status == 'resolved':
+            db_alert.resolved_at = datetime.utcnow()
         db.commit()
         db.refresh(db_alert)
     return db_alert

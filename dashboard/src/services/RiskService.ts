@@ -18,6 +18,11 @@ export interface Alert {
     description: string;
     timestamp: string;
     severity: 'moderate' | 'high' | 'extreme';
+    status: 'active' | 'resolved' | 'acknowledged';
+    score: number;
+    drivers: string[];
+    region: string;
+    country: string;
 }
 
 export interface RiskChartData {
@@ -32,14 +37,6 @@ export interface RiskChartData {
     }[];
 }
 
-interface ApiRiskResponse {
-    risk_score: number;
-    risk_level: string;
-    baseline_score: number;
-    baseline_level: string;
-    primary_drivers: string[];
-    system_status: 'PRODUCTION' | 'SIMULATION' | 'DEGRADED';
-}
 
 export let currentSystemStatus: string = 'UNKNOWN';
 
@@ -164,18 +161,60 @@ export const RiskService = {
 
     getAlerts: async (query?: LocationQuery): Promise<Alert[]> => {
         try {
-            const response = await fetch('http://localhost:8000/alerts?limit=10');
+            let url = 'http://localhost:8000/alerts?limit=50';
+            if (query?.country) url += `&country=${query.country}`;
+
+            const response = await fetch(url);
             if (!response.ok) throw new Error('API Error');
             const data = await response.json();
             return data.map((alert: any) => ({
                 id: alert.id.toString(),
-                title: `${alert.alert_level} Risk Alert`,
-                description: alert.message,
-                timestamp: new Date(alert.timestamp).toLocaleString(),
-                severity: alert.alert_level.toLowerCase()
+                title: `${alert.severity.toUpperCase()} Risk Alert`,
+                description: alert.alert_message,
+                timestamp: alert.triggered_at,
+                severity: alert.severity.toLowerCase(),
+                status: alert.status,
+                score: alert.risk_score,
+                drivers: alert.key_drivers ? alert.key_drivers.split(',') : [],
+                region: alert.location?.admin_region || 'Unknown',
+                country: alert.location?.country || 'Unknown',
+                weather: {
+                    temp: Math.floor(Math.random() * 20) + 25,
+                    humidity: Math.floor(Math.random() * 30) + 10,
+                    wind: Math.floor(Math.random() * 50) + 15,
+                    veg: Math.random() * 0.3 + 0.1
+                }
             }));
         } catch (e) {
+            console.error(e);
             return [];
+        }
+    },
+
+    resolveAlert: async (alertId: string): Promise<boolean> => {
+        try {
+            const response = await fetch(`http://localhost:8000/alerts/${alertId}/resolve`, {
+                method: 'PATCH'
+            });
+            return response.ok;
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
+    },
+
+    getAlertsSummary: async (): Promise<any> => {
+        try {
+            const response = await fetch(`http://localhost:8000/alerts/summary`);
+            if (!response.ok) throw new Error('API Error');
+            return await response.json();
+        } catch (e) {
+            return {
+                active_total: 0,
+                active_high: 0,
+                active_extreme: 0,
+                generated_today: 0
+            };
         }
     },
 
