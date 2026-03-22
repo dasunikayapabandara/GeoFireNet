@@ -6,12 +6,22 @@ const History: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
         const fetchHistory = async () => {
             const data = await RiskService.getHistory();
-            setHistory(data);
-            setLoading(false);
+            if (isMounted) {
+                setHistory(data);
+                setLoading(false);
+            }
         };
+
         fetchHistory();
+        const intervalId = setInterval(fetchHistory, 5000); // Poll every 5 seconds
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
     }, []);
 
     if (loading) return <div className="p-6">Loading History...</div>;

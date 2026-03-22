@@ -95,6 +95,35 @@ const mockHistoryData = [
     { id: 5, timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), location: { name: 'Santa Cruz Mountains' }, risk_level: 'High', risk_probability: 0.81, primary_drivers: 'High Wind, Steep Terrain' }
 ];
 
+let nextId = 6;
+setInterval(() => {
+    const locations = ['Napa Valley Sector B', 'Sonoma Ridge', 'Lake County West', 'Mendocino Forest', 'Santa Cruz foothills', 'Marin Highlands'];
+    const risks = ['Low', 'Moderate', 'High', 'Extreme'];
+    const driversList = ['Dry Vegetation', 'High Wind', 'Elevated Temperature', 'Low Humidity', 'Normal Conditions'];
+
+    const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+    const randomRisk = risks[Math.floor(Math.random() * risks.length)];
+    const randomProbability = randomRisk === 'Extreme' ? 0.8 + Math.random() * 0.2 :
+        randomRisk === 'High' ? 0.6 + Math.random() * 0.2 :
+            randomRisk === 'Moderate' ? 0.3 + Math.random() * 0.3 :
+                Math.random() * 0.3;
+    const randomDriver = driversList[Math.floor(Math.random() * driversList.length)];
+
+    mockHistoryData.unshift({
+        id: nextId++,
+        timestamp: new Date().toISOString(),
+        location: { name: randomLocation },
+        risk_level: randomRisk,
+        risk_probability: randomProbability,
+        primary_drivers: randomDriver
+    });
+
+    // Keep array size manageable
+    if (mockHistoryData.length > 50) {
+        mockHistoryData.pop();
+    }
+}, 5000);
+
 export const RiskService = {
     getMetrics: async (): Promise<RiskMetric[]> => {
         let mlScore: number;
