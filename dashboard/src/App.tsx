@@ -9,6 +9,7 @@ import Alerts from './pages/Alerts';
 import Analytics from './pages/Analytics';
 import History from './pages/History';
 import About from './pages/About';
+import Settings from './pages/Settings';
 import Login from './pages/Login';
 import { useAuth } from './context/AuthContext';
 import './styles/App.css';
@@ -37,6 +38,8 @@ function App() {
         return <div className="full-size-container"><History /></div>;
       case 'about':
         return <div className="full-size-container"><About /></div>;
+      case 'settings':
+        return <div className="full-size-container"><Settings /></div>;
       default:
         return <div className="p-6"><h2>Page Not Found</h2></div>;
     }
