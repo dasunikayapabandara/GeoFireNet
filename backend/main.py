@@ -44,6 +44,10 @@ class WildfireFeatures(BaseModel):
     humidity: float
     wind: float
     veg_moisture: float
+    country: str = "Unknown"
+    admin_region: str = "Unknown"
+    latitude: float = 0.0
+    longitude: float = 0.0
 
     @field_validator('temp')
     @classmethod
@@ -121,6 +125,19 @@ async def predict_risk(features: WildfireFeatures, db: Session = Depends(get_db)
         # Get active model version to link providence
         active_model = crud.get_active_model_version(db)
         
+        # --- Save Location to Database ---
+        db_location = None
+        if features.country and features.country.strip() != "Unknown":
+            db_location = crud.create_location(db, schemas.LocationCreate(
+                name=f"{features.admin_region}, {features.country}",
+                continent=None,
+                country=features.country,
+                admin_region=features.admin_region,
+                local_region=None,
+                latitude=features.latitude,
+                longitude=features.longitude
+            ))
+        
         prediction_log = crud.create_prediction_log(db, schemas.RiskPredictionLogCreate(
             risk_score=result["risk_score"],
             risk_probability=result["risk_probability"],
@@ -129,7 +146,8 @@ async def predict_risk(features: WildfireFeatures, db: Session = Depends(get_db)
             system_status=result.get("system_status"),
             primary_drivers=", ".join(result["primary_drivers"]),
             weather_input_id=db_weather.id,
-            model_version_id=active_model.id if active_model else None
+            model_version_id=active_model.id if active_model else None,
+            location_id=db_location.id if db_location else None
         ))
         
         # --- Auto-generate Alerts for High Risk ---

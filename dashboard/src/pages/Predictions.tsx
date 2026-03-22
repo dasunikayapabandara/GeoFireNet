@@ -5,6 +5,8 @@ const Predictions: React.FC = () => {
     const [humidity, setHumidity] = useState(40);
     const [wind, setWind] = useState(15);
     const [veg, setVeg] = useState(0.4);
+    const [country, setCountry] = useState("USA");
+    const [adminRegion, setAdminRegion] = useState("California");
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(false);
 
@@ -15,7 +17,7 @@ const Predictions: React.FC = () => {
             const response = await fetch('http://localhost:8000/predict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ temp, humidity, wind, veg_moisture: veg })
+                body: JSON.stringify({ temp, humidity, wind, veg_moisture: veg, country, admin_region: adminRegion })
             });
             const data = await response.json();
             setResult(data);
@@ -48,6 +50,19 @@ const Predictions: React.FC = () => {
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc' }}>Vegetation Moisture (0-1): {veg.toFixed(2)}</label>
                         <input type="range" min="0" max="1" step="0.05" value={veg} onChange={(e) => setVeg(Number(e.target.value))} style={{ width: '100%' }} />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc' }}>Country</label>
+                        <select value={country} onChange={e => setCountry(e.target.value)} style={{ width: '100%', padding: '0.5rem', background: '#334155', color: '#fff', border: '1px solid #475569', borderRadius: '0.25rem' }}>
+                            <option value="USA">USA</option>
+                            <option value="Australia">Australia</option>
+                            <option value="Greece">Greece</option>
+                            <option value="Portugal">Portugal</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#f8fafc' }}>Admin Region / State</label>
+                        <input type="text" value={adminRegion} onChange={(e) => setAdminRegion(e.target.value)} style={{ width: '100%', padding: '0.5rem', background: '#334155', color: '#fff', border: '1px solid #475569', borderRadius: '0.25rem' }} />
                     </div>
                     <button type="submit" className="btn btn-primary" disabled={loading}>
                         {loading ? 'Running Inference...' : 'Run Pipeline Inference'}

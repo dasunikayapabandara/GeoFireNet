@@ -46,7 +46,11 @@ const History: React.FC = () => {
                         {history.map((log) => (
                             <tr key={log.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                 <td style={{ padding: '1rem 0.5rem' }}>{new Date(log.timestamp).toLocaleString()}</td>
-                                <td style={{ padding: '1rem 0.5rem' }}>{log.location?.name || 'Unknown'}</td>
+                                <td style={{ padding: '1rem 0.5rem' }}>
+                                    {log.location ?
+                                        `${log.location.admin_region || log.location.name || ''}, ${log.location.country || ''}`.replace(/^, | ,/g, '') :
+                                        'Simulator User Hub'}
+                                </td>
                                 <td style={{ padding: '1rem 0.5rem' }}>
                                     <span style={{
                                         color: log.risk_level === 'Extreme' ? '#ef4444' : log.risk_level === 'High' ? '#f97316' : log.risk_level === 'Moderate' ? '#eab308' : '#22c55e',

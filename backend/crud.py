@@ -4,6 +4,10 @@ from backend import models, schemas
 def create_location(db: Session, location: schemas.LocationCreate):
     db_location = models.Location(
         name=location.name,
+        continent=location.continent,
+        country=location.country,
+        admin_region=location.admin_region,
+        local_region=location.local_region,
         latitude=location.latitude,
         longitude=location.longitude
     )
