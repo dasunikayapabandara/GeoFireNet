@@ -42,7 +42,7 @@ const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTa
             </div>
 
             <div className="header-actions">
-                <button className="icon-btn" aria-label="Notifications">
+                <button className="icon-btn" aria-label="Notifications" onClick={() => setActiveTab('alerts')}>
                     <Bell size={20} />
                     <span className="notification-badge">3</span>
                 </button>
