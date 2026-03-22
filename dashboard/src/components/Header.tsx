@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Flame, Bell, User, ShieldCheck, ChevronDown } from 'lucide-react';
+import { Flame, Bell, User, ChevronDown } from 'lucide-react';
 import '../styles/Header.css';
 import { useAuth } from '../context/AuthContext';
 
@@ -35,10 +35,6 @@ const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTa
             <div className="header-logo" onClick={() => setActiveTab('dashboard')} style={{ cursor: 'pointer' }}>
                 <Flame className="logo-icon" size={24} color="#f97316" />
                 <h1 className="logo-text">GeoFireNet</h1>
-                <div className="system-status desktop-only">
-                    <ShieldCheck size={14} className="status-icon" color="#22c55e" />
-                    <span>System Online</span>
-                </div>
             </div>
 
             <div className="header-actions">
