@@ -1,5 +1,6 @@
 import pandas as pd
-from . import config, model_registry
+from backend.core.config import RISK_LEVELS_DEFAULT
+from backend import model_registry
 
 class RiskPredictor:
     def __init__(self):
@@ -11,7 +12,7 @@ class RiskPredictor:
         except Exception as e:
             print(f"Failed to load model from registry: {e}. Running in degraded mock mode.")
             self.model = None
-            self.thresholds = config.RISK_LEVELS_DEFAULT
+            self.thresholds = RISK_LEVELS_DEFAULT
             self.is_mock = True
 
     def get_risk_level(self, probability):

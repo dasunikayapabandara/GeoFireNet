@@ -45,11 +45,11 @@ def test_prediction_creates_alert_relation(db_session):
     db_session.add(pred)
     db_session.commit()
     
-    alert = Alert(prediction_id=pred.id, alert_level="Extreme", message="Test Alert")
+    alert = Alert(prediction_id=pred.id, severity="Extreme", alert_message="Test Alert", risk_score=95.0)
     db_session.add(alert)
     db_session.commit()
     
     # Test strict SQLAlchemy relationship traversal
-    assert pred.alert.message == "Test Alert"
+    assert pred.alert.alert_message == "Test Alert"
     assert alert.prediction.risk_score == 95.0
     assert pred.weather_input.temp == 40.0

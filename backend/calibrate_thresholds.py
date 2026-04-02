@@ -1,7 +1,8 @@
 import json
 import numpy as np
 from sklearn.metrics import recall_score, precision_score, f1_score
-from . import config, data_loader, model_registry
+from backend.core import config
+from backend import data_loader, model_registry
 
 def calibrate():
     print("--- GeoFireNet ML Pipeline: Threshold Calibration ---")

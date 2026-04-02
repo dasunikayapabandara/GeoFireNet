@@ -1,10 +1,11 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from . import config
+from backend.core.config import settings
+from backend.core import config
 import os
 
-def generate_synthetic_data(n_samples=3000, save_path=config.DATASET_PATH, seed=None):
+def generate_synthetic_data(n_samples=3000, save_path=os.path.join(config.DATA_DIR, "dataset.csv"), seed=None):
     """
     Generate synthetic data mimicking California summer climate and save to disk.
     Allows for reproducible training runs.

@@ -5,7 +5,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, TransformerMixin
-from . import config
+from backend.core import config
 
 class WildfireFeatureEngineer(BaseEstimator, TransformerMixin):
     """

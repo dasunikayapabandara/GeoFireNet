@@ -2,7 +2,8 @@ import json
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, f1_score, precision_recall_curve, auc
-from . import config, data_loader, model_registry
+from backend.core import config
+from backend import data_loader, model_registry
 
 def evaluate():
     print("--- GeoFireNet ML Pipeline: Evaluation Phase ---")

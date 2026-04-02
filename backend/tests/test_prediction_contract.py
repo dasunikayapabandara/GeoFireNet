@@ -1,5 +1,5 @@
 import pytest
-from backend.main import WildfireFeatures
+from backend.api.routes.predict import WildfireFeatures
 
 def test_wildfire_feature_clamping():
     """Test that Pydantic properly clamps extreme inputs to prevent model crashes."""
@@ -21,7 +21,7 @@ def test_wildfire_feature_clamping():
 
 def test_risk_level_mapping_fallback():
     """Test the basic fallback risk level mapping logic."""
-    from backend.predict import RiskPredictor
+    from backend.services.prediction_service import RiskPredictor
     
     # We test the predictor mapping assuming default thresholds
     predictor = RiskPredictor()

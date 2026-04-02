@@ -1,7 +1,8 @@
 import pytest
 import pandas as pd
 import numpy as np
-from backend import data_loader, features, config
+from backend import data_loader, features
+from backend.core import config
 
 def test_data_loader_generation(tmp_path):
     """Test that synthetic data generates with correct columns and no extreme leaks."""
