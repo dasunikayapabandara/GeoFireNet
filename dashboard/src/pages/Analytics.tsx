@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     Flame, TrendingUp, AlertOctagon, Activity,
     Map, Filter, Lightbulb, ThermometerSun, Wind, AlertTriangle, ArrowUpRight, ArrowDownRight

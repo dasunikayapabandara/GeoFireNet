@@ -3,7 +3,7 @@ import {
     BellRing, AlertOctagon, CheckCircle2, ShieldAlert,
     Map, X, ThermometerSun, Wind, Droplets, Leaf
 } from 'lucide-react';
-import { RiskService, type Alert } from '../services/RiskService';
+import { RiskService } from '../services/RiskService';
 import '../styles/Alerts.css';
 
 const Alerts: React.FC = () => {
@@ -194,7 +194,7 @@ const Alerts: React.FC = () => {
                             <div style={{ marginTop: '1.5rem' }}>
                                 <h4 style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.05em' }}>Identified Drivers</h4>
                                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    {selectedAlert.drivers.map((driver, idx) => (
+                                    {selectedAlert.drivers.map((driver: string, idx: number) => (
                                         <span key={idx} className="badge" style={{ background: 'var(--bg-tertiary)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-primary)' }}>
                                             {driver}
                                         </span>

@@ -218,7 +218,7 @@ export const RiskService = {
         }
     },
 
-    getRiskTrend: async (query?: LocationQuery): Promise<RiskChartData> => {
+    getRiskTrend: async (_query?: LocationQuery): Promise<RiskChartData> => {
         return new Promise((resolve) => setTimeout(() => resolve(mockChartData), 800));
     },
 

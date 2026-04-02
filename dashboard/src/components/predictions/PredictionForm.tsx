@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PredictionInput } from '../../types/prediction';
+import type { PredictionInput } from '../../types/prediction';
 
 interface Props {
     onPredict: (data: PredictionInput) => void;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HistoryItem } from '../../types/prediction';
+import type { HistoryItem } from '../../types/prediction';
 
 const PredictionHistory: React.FC = () => {
     const [history, setHistory] = useState<HistoryItem[]>([]);

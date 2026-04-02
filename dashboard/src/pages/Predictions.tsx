@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PredictionForm from '../components/predictions/PredictionForm';
 import PredictionResultCard from '../components/predictions/PredictionResult';
 import PredictionHistory from '../components/predictions/PredictionHistory';
-import { PredictionInput, PredictionResult } from '../types/prediction';
+import type { PredictionInput, PredictionResult } from '../types/prediction';
 import '../styles/Predictions.css';
 
 const Predictions: React.FC = () => {
