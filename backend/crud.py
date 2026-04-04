@@ -97,6 +97,9 @@ def create_alert(db: Session, alert: schemas.AlertCreate):
     db.refresh(db_alert)
     return db_alert
 
+def get_alert(db: Session, alert_id: int):
+    return db.query(models.Alert).filter(models.Alert.id == alert_id).first()
+
 def get_alerts(db: Session, limit: int = 50, status: str = None, severity: str = None, country: str = None):
     query = db.query(models.Alert)
     

@@ -10,6 +10,14 @@ async def get_alerts(limit: int = 50, status: str = None, severity: str = None, 
     """Fetch recent automated alerts with extensive operational filtering."""
     return crud.get_alerts(db, limit=limit, status=status, severity=severity, country=country)
 
+@router.get("/{alert_id}", response_model=schemas.Alert)
+async def get_alert(alert_id: int, db: Session = Depends(get_db)):
+    """Fetch a specific alert by ID."""
+    alert = crud.get_alert(db, alert_id)
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return alert
+
 @router.get("/summary")
 async def get_alerts_summary(db: Session = Depends(get_db)):
     """Return counts for the top-level KPI cards."""
