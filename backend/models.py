@@ -131,3 +131,14 @@ class ActiveDetectionLog(Base):
     
     # Relationships
     location = relationship("Location", back_populates="detections")
+
+class SystemSettings(Base):
+    """Dynamic configuration settings for the backend."""
+    __tablename__ = "system_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    setting_key = Column(String, unique=True, index=True, nullable=False)
+    setting_value = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
