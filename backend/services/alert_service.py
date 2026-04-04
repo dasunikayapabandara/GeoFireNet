@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from backend.core.config import settings
 from backend import schemas, crud
+from backend.core.logger import logger
 
 def evaluate_and_create_alert(db: Session, prediction_log_id: int, location_id: int, risk_score: float, primary_drivers: list[str]) -> schemas.Alert | None:
     """
@@ -24,6 +25,7 @@ def evaluate_and_create_alert(db: Session, prediction_log_id: int, location_id: 
             alert_message=f"Automated risk detection flag: {severity.upper()}. Immediate review recommended.",
             key_drivers=driver_str
         ))
+        logger.warning(f"Automated Alert Generated: {severity.upper()} severity flag placed on Prediction LOG_ID={prediction_log_id}")
         return alert
         
     return None

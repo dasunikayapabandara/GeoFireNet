@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from backend.core.logger import logger
 
 # Import routers from the new structure
 from backend.api.routes import (
@@ -13,6 +15,18 @@ from backend.api.routes import (
 )
 
 app = FastAPI(title="GeoFireNet Risk API v2")
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("GeoFireNet API starting up...")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled Exception processing {request.method} {request.url}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred."},
+    )
 
 # Allow CORS for React Dashboard
 app.add_middleware(

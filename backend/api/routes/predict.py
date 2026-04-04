@@ -7,6 +7,7 @@ from backend.api.deps import get_db, get_predictor
 from backend import schemas, crud
 from backend.services.prediction_service import RiskPredictor
 from backend.services.alert_service import evaluate_and_create_alert
+from backend.core.logger import logger
 
 router = APIRouter()
 
@@ -37,6 +38,7 @@ async def predict_risk(
         )
         
     try:
+        logger.info(f"Processing prediction request...")
         # Delegate to Prediction Engine
         result = predictor.predict(
             temp=features.temp,
@@ -106,7 +108,7 @@ async def predict_risk(
             timestamp=prediction_log.timestamp
         )
     except Exception as e:
-        print(f"Prediction API Error: {e}")
+        logger.error(f"Prediction API Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Prediction Error")
 
 @router.post("/reactive", response_model=schemas.ReactivePrediction)
