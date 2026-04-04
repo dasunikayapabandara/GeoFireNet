@@ -1,6 +1,82 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional, List
+from enum import Enum
+
+class SystemMode(str, Enum):
+    PRODUCTION = "PRODUCTION"
+    SIMULATION = "SIMULATION"
+    DEGRADED = "DEGRADED"
+
+class PredictionRequest(BaseModel):
+    temp: float
+    humidity: float
+    wind: float
+    veg_moisture: float
+    country: str = "Unknown"
+    admin_region: str = "Unknown"
+    latitude: float = 0.0
+    longitude: float = 0.0
+
+    @field_validator('temp')
+    @classmethod
+    def clamp_temp(cls, v):
+        if v < -20.0 or v > 60.0:
+            return max(-20.0, min(v, 60.0))
+        return v
+
+    @field_validator('humidity')
+    @classmethod
+    def clamp_humidity(cls, v):
+        if v < 0.0 or v > 100.0:
+            return max(0.0, min(v, 100.0))
+        return v
+
+    @field_validator('wind')
+    @classmethod
+    def clamp_wind(cls, v):
+        if v < 0.0 or v > 150.0:
+            return max(0.0, min(v, 150.0))
+        return v
+
+    @field_validator('veg_moisture')
+    @classmethod
+    def clamp_veg(cls, v):
+        if v < 0.0 or v > 1.0:
+            return max(0.0, min(v, 1.0))
+        return v
+
+    @field_validator('latitude')
+    @classmethod
+    def clamp_lat(cls, v):
+        if v < -90.0 or v > 90.0:
+            return max(-90.0, min(v, 90.0))
+        return v
+
+    @field_validator('longitude')
+    @classmethod
+    def clamp_long(cls, v):
+        if v < -180.0 or v > 180.0:
+            return max(-180.0, min(v, 180.0))
+        return v
+
+class PredictionResponse(BaseModel):
+    risk_score: float
+    risk_probability: float
+    risk_level: str
+    baseline_score: float
+    baseline_level: str
+    explanation: List[str]
+    system_status: SystemMode
+    alert_triggered: bool
+    saved_prediction_id: Optional[int] = None
+    location_id: Optional[int] = None
+    timestamp: datetime
+
+class ReactivePrediction(BaseModel):
+    is_fire: bool
+    confidence: float
+    message: str
 
 # -----------------
 # We define ORM schemas here separating them from the raw API input schemas in main.py

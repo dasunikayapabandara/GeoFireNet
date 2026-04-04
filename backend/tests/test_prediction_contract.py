@@ -1,19 +1,19 @@
 import pytest
-from backend.api.routes.predict import WildfireFeatures
+from backend.schemas import PredictionRequest
 
 def test_wildfire_feature_clamping():
     """Test that Pydantic properly clamps extreme inputs to prevent model crashes."""
     
     # Normal input
-    features = WildfireFeatures(temp=30.0, humidity=40.0, wind=20.0, veg_moisture=0.3)
+    features = PredictionRequest(temp=30.0, humidity=40.0, wind=20.0, veg_moisture=0.3)
     assert features.temp == 30.0
     
     # Extreme Heat Clamped
-    features_hot = WildfireFeatures(temp=999.0, humidity=40.0, wind=20.0, veg_moisture=0.3)
+    features_hot = PredictionRequest(temp=999.0, humidity=40.0, wind=20.0, veg_moisture=0.3)
     assert features_hot.temp == 60.0
     
     # Negative values clamped
-    features_cold = WildfireFeatures(temp=-50.0, humidity=-10.0, wind=-5.0, veg_moisture=-1.0)
+    features_cold = PredictionRequest(temp=-50.0, humidity=-10.0, wind=-5.0, veg_moisture=-1.0)
     assert features_cold.temp == -20.0
     assert features_cold.humidity == 0.0
     assert features_cold.wind == 0.0
