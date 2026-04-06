@@ -25,24 +25,3 @@ async def get_model_health(predictor = Depends(get_predictor)):
     if getattr(predictor, "is_mock", False):
         return {"status": "degraded", "service": "model", "mocked": True}
     return {"status": "healthy", "service": "model", "mocked": False}
-
-@router.get("/status")
-async def get_system_status(db: Session = Depends(get_db), predictor = Depends(get_predictor)):
-    """Aggregated status composite mapping overall systemic reliance."""
-    db_status = "healthy"
-    try:
-        db.execute(text("SELECT 1"))
-    except Exception:
-        db_status = "degraded"
-        
-    model_status = "healthy" if not getattr(predictor, "is_mock", False) else "degraded"
-    
-    status_code = "healthy" if db_status == "healthy" and model_status == "healthy" else "degraded"
-    
-    return {
-        "status": status_code,
-        "components": {
-            "database": db_status,
-            "model": model_status
-        }
-    }

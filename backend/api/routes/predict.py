@@ -38,7 +38,7 @@ async def predict_risk(
         )
         
     try:
-        logger.info(f"Processing prediction request...")
+        logger.info(f"Processing prediction request for mode={current_mode.value}, region={features.admin_region}, country={features.country}")
         # Delegate to Prediction Engine
         result = predictor.predict(
             temp=features.temp,
@@ -46,6 +46,7 @@ async def predict_risk(
             wind=features.wind,
             veg_moisture=features.veg_moisture
         )
+        logger.info(f"Prediction completed: risk_score={result['risk_score']}, level={result['risk_level']}")
         
         # Save input
         db_weather = crud.create_weather_input(db, schemas.WeatherInputCreate(
@@ -93,7 +94,9 @@ async def predict_risk(
         )
         if alert_record and getattr(alert_record, "id", None):
             alert_flag = True
+            logger.info(f"Alert {alert_record.id} triggered for high risk prediction.")
             
+        logger.info(f"Successfully processed and recorded prediction_id={prediction_log.id}.")
         return schemas.PredictionResponse(
             risk_score=result["risk_score"],
             risk_probability=result["risk_probability"],
