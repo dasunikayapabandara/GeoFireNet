@@ -20,7 +20,7 @@ def test_predict_endpoint_success():
     assert "risk_score" in data
     assert "explanation" in data
     assert "alert_triggered" in data
-    assert "saved_prediction_id" in data
+    assert "saved_prediction_id" in data # Will be None temporarily due to async DB commits in background tasks
     assert "timestamp" in data
     assert "system_status" in data
     assert "baseline_level" in data

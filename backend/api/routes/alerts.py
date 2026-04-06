@@ -14,7 +14,12 @@ async def get_alerts(limit: int = 50, status: str = None, severity: str = None, 
 
 @router.get("/summary")
 async def get_alerts_summary(db: Session = Depends(get_db)):
-    """Return counts for the top-level KPI cards."""
+    """Return counts for the top-level KPI cards with basic in-memory caching."""
+    import time
+    global _summary_cache, _summary_timestamp
+    if hasattr(router, "_summary_cache") and time.time() - getattr(router, "_summary_timestamp", 0) < 60:
+        return router._summary_cache
+
     total_active = db.query(models.Alert).filter(models.Alert.status == 'active').count()
     high_active = db.query(models.Alert).filter(models.Alert.status == 'active', models.Alert.severity == 'high').count()
     extreme_active = db.query(models.Alert).filter(models.Alert.status == 'active', models.Alert.severity == 'extreme').count()
@@ -23,12 +28,16 @@ async def get_alerts_summary(db: Session = Depends(get_db)):
     today_start = datetime.combine(date.today(), datetime.min.time())
     today_count = db.query(models.Alert).filter(models.Alert.triggered_at >= today_start).count()
     
-    return {
+    import time
+    result = {
         "active_total": total_active,
         "active_high": high_active,
         "active_extreme": extreme_active,
         "generated_today": today_count
     }
+    router._summary_cache = result
+    router._summary_timestamp = time.time()
+    return result
 
 @router.get("/{alert_id}", response_model=schemas.Alert)
 async def get_alert(alert_id: int, db: Session = Depends(get_db)):

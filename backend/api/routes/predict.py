@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime
 import os
 
 from backend.api.deps import get_db, get_predictor
+from backend.database import SessionLocal
 from backend import schemas, crud
 from backend.services.prediction_service import RiskPredictor
 from backend.services.alert_service import evaluate_and_create_alert
@@ -11,10 +12,47 @@ from backend.core.logger import logger
 
 router = APIRouter()
 
+def _background_db_save(features: schemas.PredictionRequest, result: dict, current_mode_value: str):
+    """Executes database tracking outside of the HTTP event loop."""
+    db: Session = SessionLocal()
+    try:
+        db_weather = crud.create_weather_input(db, schemas.WeatherInputCreate(
+            temp=features.temp, humidity=features.humidity,
+            wind=features.wind, veg_moisture=features.veg_moisture
+        ))
+        active_model = crud.get_active_model_version(db)
+        db_location = None
+        if features.country and features.country.strip() != "Unknown":
+            db_location = crud.create_location(db, schemas.LocationCreate(
+                name=f"{features.admin_region}, {features.country}", continent=None,
+                country=features.country, admin_region=features.admin_region,
+                local_region=None, latitude=features.latitude, longitude=features.longitude
+            ))
+        
+        prediction_log = crud.create_prediction_log(db, schemas.RiskPredictionLogCreate(
+            risk_score=result["risk_score"], risk_probability=result["risk_probability"],
+            risk_level=result["risk_level"], baseline_score=result["baseline_score"],
+            system_status=current_mode_value, primary_drivers=", ".join(result["primary_drivers"]),
+            weather_input_id=db_weather.id, model_version_id=active_model.id if active_model else None,
+            location_id=db_location.id if db_location else None
+        ))
+        
+        alert_record = evaluate_and_create_alert(
+            db=db, prediction_log_id=prediction_log.id, location_id=prediction_log.location_id,
+            risk_score=result["risk_score"], primary_drivers=result["primary_drivers"]
+        )
+        if alert_record and getattr(alert_record, "id", None):
+            logger.info(f"Alert {alert_record.id} triggered in background.")
+        logger.info(f"Successfully tracked prediction_id={prediction_log.id} in background.")
+    except Exception as e:
+        logger.error(f"Background I/O Error: {e}", exc_info=True)
+    finally:
+        db.close()
+
 @router.post("", response_model=schemas.PredictionResponse)
 async def predict_risk(
     features: schemas.PredictionRequest, 
-    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks,
     predictor: RiskPredictor = Depends(get_predictor)
 ):
     # Determine mode
@@ -48,55 +86,12 @@ async def predict_risk(
         )
         logger.info(f"Prediction completed: risk_score={result['risk_score']}, level={result['risk_level']}")
         
-        # Save input
-        db_weather = crud.create_weather_input(db, schemas.WeatherInputCreate(
-            temp=features.temp,
-            humidity=features.humidity,
-            wind=features.wind,
-            veg_moisture=features.veg_moisture
-        ))
+        # Fast calculate if alert would trigger theoretically to notify UI immediately
+        alert_flag = result["risk_score"] >= 50.0  # Moderate or higher threshold triggers evaluations
         
-        active_model = crud.get_active_model_version(db)
+        # Offload all database writes
+        background_tasks.add_task(_background_db_save, features, result, current_mode.value)
         
-        # Save location
-        db_location = None
-        if features.country and features.country.strip() != "Unknown":
-            db_location = crud.create_location(db, schemas.LocationCreate(
-                name=f"{features.admin_region}, {features.country}",
-                continent=None,
-                country=features.country,
-                admin_region=features.admin_region,
-                local_region=None,
-                latitude=features.latitude,
-                longitude=features.longitude
-            ))
-        
-        prediction_log = crud.create_prediction_log(db, schemas.RiskPredictionLogCreate(
-            risk_score=result["risk_score"],
-            risk_probability=result["risk_probability"],
-            risk_level=result["risk_level"],
-            baseline_score=result["baseline_score"],
-            system_status=current_mode.value,
-            primary_drivers=", ".join(result["primary_drivers"]),
-            weather_input_id=db_weather.id,
-            model_version_id=active_model.id if active_model else None,
-            location_id=db_location.id if db_location else None
-        ))
-        
-        # Alerts via new service
-        alert_flag = False
-        alert_record = evaluate_and_create_alert(
-            db=db,
-            prediction_log_id=prediction_log.id,
-            location_id=prediction_log.location_id,
-            risk_score=result["risk_score"],
-            primary_drivers=result["primary_drivers"]
-        )
-        if alert_record and getattr(alert_record, "id", None):
-            alert_flag = True
-            logger.info(f"Alert {alert_record.id} triggered for high risk prediction.")
-            
-        logger.info(f"Successfully processed and recorded prediction_id={prediction_log.id}.")
         return schemas.PredictionResponse(
             risk_score=result["risk_score"],
             risk_probability=result["risk_probability"],
@@ -106,9 +101,9 @@ async def predict_risk(
             explanation=result["primary_drivers"],
             system_status=current_mode,
             alert_triggered=alert_flag,
-            saved_prediction_id=prediction_log.id,
-            location_id=prediction_log.location_id,
-            timestamp=prediction_log.timestamp
+            saved_prediction_id=None,
+            location_id=None,
+            timestamp=datetime.utcnow()
         )
     except Exception as e:
         logger.error(f"Prediction API Error: {e}", exc_info=True)

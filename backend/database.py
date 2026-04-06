@@ -7,7 +7,13 @@ DATABASE_URL = settings.database_url
 
 # Create the SQLAlchemy engine
 # pool_pre_ping=True helps detect disconnected databases early
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+# pool_size and max_overflow prevent thread starvation without requiring async rewrites
+engine = create_engine(
+    DATABASE_URL, 
+    pool_pre_ping=True,
+    pool_size=10, 
+    max_overflow=20
+)
 
 # Create a customized Session class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
