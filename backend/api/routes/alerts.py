@@ -12,15 +12,6 @@ async def get_alerts(limit: int = 50, status: str = None, severity: str = None, 
     logger.info(f"Fetching alerts: limit={limit}, status={status}, severity={severity}, country={country}")
     return crud.get_alerts(db, limit=limit, status=status, severity=severity, country=country)
 
-@router.get("/{alert_id}", response_model=schemas.Alert)
-async def get_alert(alert_id: int, db: Session = Depends(get_db)):
-    """Fetch a specific alert by ID."""
-    alert = crud.get_alert(db, alert_id)
-    if not alert:
-        logger.warning(f"Failed to fetch alert {alert_id}: Not found")
-        raise HTTPException(status_code=404, detail="Alert not found")
-    return alert
-
 @router.get("/summary")
 async def get_alerts_summary(db: Session = Depends(get_db)):
     """Return counts for the top-level KPI cards."""
@@ -38,6 +29,16 @@ async def get_alerts_summary(db: Session = Depends(get_db)):
         "active_extreme": extreme_active,
         "generated_today": today_count
     }
+
+@router.get("/{alert_id}", response_model=schemas.Alert)
+async def get_alert(alert_id: int, db: Session = Depends(get_db)):
+    """Fetch a specific alert by ID."""
+    alert = crud.get_alert(db, alert_id)
+    if not alert:
+        logger.warning(f"Failed to fetch alert {alert_id}: Not found")
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return alert
+
 
 @router.patch("/{alert_id}/acknowledge", response_model=schemas.Alert)
 async def acknowledge_alert(alert_id: int, db: Session = Depends(get_db)):

@@ -46,3 +46,26 @@ def test_prediction_to_alert_flow():
     resolve_resp = client.patch(f"/alerts/{alert_id}/resolve")
     assert resolve_resp.status_code == 200
     assert resolve_resp.json()["status"] == "resolved"
+
+def test_fetch_alerts_filtered():
+    response = client.get("/alerts?limit=10&status=active&severity=extreme")
+    assert response.status_code == 200
+    alerts = response.json()
+    assert isinstance(alerts, list)
+    # If there are any alerts returned, they should match the filter
+    for alert in alerts:
+        assert alert["severity"] == "extreme"
+
+def test_alert_summary_endpoint():
+    response = client.get("/alerts/summary")
+    assert response.status_code == 200
+    data = response.json()
+    assert "active_total" in data
+    assert "active_high" in data
+    assert "active_extreme" in data
+    assert "generated_today" in data
+
+def test_alert_not_found():
+    response = client.get("/alerts/999999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Alert not found"

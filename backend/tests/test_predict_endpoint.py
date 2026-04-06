@@ -38,3 +38,20 @@ def test_predict_endpoint_lat_lon_clamping():
     })
     
     assert response.status_code == 200
+
+def test_predict_validation_error():
+    # Missing required validation fields like 'temp' or providing wrong type
+    response = client.post("/predict", json={
+        "wind": 50.0,
+        "veg_moisture": 0.1,
+        "country": "USA",
+        "admin_region": "CA"
+    })
+    
+    assert response.status_code == 422
+    data = response.json()
+    assert "detail" in data
+    assert "errors" in data
+    assert data["detail"] == "Payload validation failed"
+    # Should flag missing 'temp' and 'humidity'
+    assert len(data["errors"]) >= 2

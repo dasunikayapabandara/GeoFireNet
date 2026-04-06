@@ -22,7 +22,7 @@ def test_health_check_model():
     assert "mocked" in response.json()
 
 def test_system_status():
-    response = client.get("/health/status")
+    response = client.get("/system/status")
     assert response.status_code == 200
     data = response.json()
     assert "status" in data
