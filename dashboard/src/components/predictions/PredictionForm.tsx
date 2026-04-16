@@ -3,16 +3,17 @@ import type { PredictionInput } from '../../types/prediction';
 
 interface Props {
     onPredict: (data: PredictionInput) => void;
+    onReset?: () => void;
     loading: boolean;
 }
 
-export const PRESETS = {
+const PRESETS = {
     MILD: { temp: 22, humidity: 45, wind: 15, veg_moisture: 0.6, country: 'USA', admin_region: 'Napa Valley' },
     HIGH: { temp: 35, humidity: 20, wind: 40, veg_moisture: 0.3, country: 'Australia', admin_region: 'New South Wales' },
     EXTREME: { temp: 42, humidity: 8, wind: 85, veg_moisture: 0.05, country: 'Greece', admin_region: 'Attica' }
 };
 
-const PredictionForm: React.FC<Props> = ({ onPredict, loading }) => {
+const PredictionForm: React.FC<Props> = ({ onPredict, onReset, loading }) => {
     const [formData, setFormData] = useState<PredictionInput>({ ...PRESETS.MILD });
 
     const handleChange = (key: keyof PredictionInput, val: string | number) => {
@@ -21,6 +22,11 @@ const PredictionForm: React.FC<Props> = ({ onPredict, loading }) => {
 
     const loadPreset = (preset: typeof PRESETS.MILD) => {
         setFormData({ ...preset });
+    };
+
+    const handleReset = () => {
+        loadPreset(PRESETS.MILD);
+        if (onReset) onReset();
     };
 
     const validateAndSubmit = (e: React.FormEvent) => {
@@ -97,7 +103,7 @@ const PredictionForm: React.FC<Props> = ({ onPredict, loading }) => {
                 </div>
 
                 <div className="form-actions form-full-row">
-                    <button type="button" onClick={() => loadPreset(PRESETS.MILD)} className="btn btn-outline" disabled={loading}>Reset</button>
+                    <button type="button" onClick={handleReset} className="btn btn-outline" disabled={loading}>Reset</button>
                     <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
                         {loading ? 'Executing ML Inference...' : 'Run Prediction Engine'}
                     </button>

@@ -55,8 +55,8 @@ const PredictionResultCard: React.FC<Props> = ({ result, inputs }) => {
                 </p>
 
                 <ul className="driver-list">
-                    {result.primary_drivers.length > 0 ? (
-                        result.primary_drivers.map((driver, idx) => (
+                    {result.explanation.length > 0 ? (
+                        result.explanation.map((driver, idx) => (
                             <li key={idx} className="driver-item">
                                 <span className="driver-icon">⚠️</span>
                                 <span className="driver-text">{driver}</span>

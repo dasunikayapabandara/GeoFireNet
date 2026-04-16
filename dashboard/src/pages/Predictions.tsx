@@ -32,6 +32,12 @@ const Predictions: React.FC = () => {
         }
     };
 
+    const handleReset = () => {
+        setResult(null);
+        setLastInputs(null);
+        setError(null);
+    };
+
     return (
         <div className="predictions-page p-6">
             <div className="predictions-header">
@@ -42,7 +48,7 @@ const Predictions: React.FC = () => {
 
             <div className="predictions-workbench">
                 <div className="workbench-inputs">
-                    <PredictionForm onPredict={handlePredict} loading={loading} />
+                    <PredictionForm onPredict={handlePredict} onReset={handleReset} loading={loading} />
                 </div>
 
                 <div className="workbench-outputs">

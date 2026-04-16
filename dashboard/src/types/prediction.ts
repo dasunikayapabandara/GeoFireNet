@@ -13,7 +13,7 @@ export interface PredictionResult {
     risk_level: string;
     baseline_score: number;
     baseline_level: string;
-    primary_drivers: string[];
+    explanation: string[];
     system_status: string;
 }
 
