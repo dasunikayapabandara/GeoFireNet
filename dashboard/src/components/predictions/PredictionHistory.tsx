@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import type { HistoryItem } from '../../types/prediction';
 
 const PredictionHistory: React.FC = () => {
@@ -14,6 +15,17 @@ const PredictionHistory: React.FC = () => {
             console.error("Failed fetching history for Predictions Page", e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: number | string) => {
+        // Optimistic UI Update: immediately remove from view
+        setHistory(prev => prev.filter(item => item.id !== id));
+        try {
+            await fetch(`http://localhost:8000/history/${id}`, { method: 'DELETE' });
+        } catch (e) {
+            console.error("Failed to delete history item on the server", e);
+            // Optionally could re-fetch history here on failure to restore state
         }
     };
 
@@ -40,6 +52,7 @@ const PredictionHistory: React.FC = () => {
                             <th>Metrics Input</th>
                             <th>Risk Tier</th>
                             <th>Primary Driver</th>
+                            <th style={{ width: '60px' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -60,6 +73,19 @@ const PredictionHistory: React.FC = () => {
                                     </span>
                                 </td>
                                 <td className="text-muted small limit-text">{item.primary_drivers || 'N/A'}</td>
+                                <td>
+                                    <button 
+                                        onClick={() => handleDelete(item.id)}
+                                        style={{ 
+                                            background: 'none', border: '1px solid rgba(239, 68, 68, 0.3)', 
+                                            color: 'var(--accent-risk-extreme)', padding: '0.2rem 0.4rem', 
+                                            borderRadius: '4px', cursor: 'pointer' 
+                                        }}
+                                        title="Delete Record"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from backend import models, schemas
 
 def create_location(db: Session, location: schemas.LocationCreate):
@@ -101,7 +101,7 @@ def get_alert(db: Session, alert_id: int):
     return db.query(models.Alert).filter(models.Alert.id == alert_id).first()
 
 def get_alerts(db: Session, limit: int = 50, status: str = None, severity: str = None, country: str = None):
-    query = db.query(models.Alert)
+    query = db.query(models.Alert).options(joinedload(models.Alert.location))
     
     if status:
         query = query.filter(models.Alert.status == status)
