@@ -60,11 +60,16 @@ const mockChartData: RiskChartData = {
     ],
 };
 
-const currentConditions = {
-    temp: 35,
-    humidity: 15,
-    wind: 25,
-    veg_moisture: 0.2
+const getConditionsForCountry = (country?: string) => {
+    switch (country) {
+        case 'USA': return { temp: 32, humidity: 20, wind: 30, veg_moisture: 0.25 };
+        case 'Australia': return { temp: 42, humidity: 12, wind: 45, veg_moisture: 0.15 };
+        case 'Greece': return { temp: 38, humidity: 18, wind: 35, veg_moisture: 0.2 };
+        case 'Portugal': return { temp: 36, humidity: 25, wind: 25, veg_moisture: 0.3 };
+        case 'Canada': return { temp: 25, humidity: 40, wind: 20, veg_moisture: 0.6 };
+        case 'Brazil': return { temp: 30, humidity: 60, wind: 15, veg_moisture: 0.7 };
+        default: return { temp: 35, humidity: 15, wind: 25, veg_moisture: 0.2 }; // Global Avg / Fallback
+    }
 };
 
 const calculateFallbackRisk = (temp: number, humidity: number, wind: number, veg: number): number => {
@@ -140,18 +145,19 @@ setInterval(() => {
 
 export const RiskService = {
     getMetrics: async (query?: LocationQuery): Promise<RiskMetric[]> => {
-        let mlScore = calculateFallbackRisk(currentConditions.temp, currentConditions.humidity, currentConditions.wind, currentConditions.veg_moisture);
+        const cond = getConditionsForCountry(query?.country);
+        const mlScore = calculateFallbackRisk(cond.temp, cond.humidity, cond.wind, cond.veg_moisture);
         currentSystemStatus = 'DEGRADED (Client Fallback)';
         return [
             {
-                title: query?.country ? `Avg Risk: ${query.country}` : "Global Avg Risk",
+                title: query?.country ? `${query.country} Avg Risk` : "Global Avg Risk",
                 value: `${Math.round(mlScore)}/100`,
                 change: "Stable",
                 trend: "neutral",
                 status: getRiskStatus(mlScore)
             },
             {
-                title: "Active Hotspots globally",
+                title: query?.country ? `Active Hotspots in ${query.country}` : "Active Hotspots Globally",
                 value: mockActiveDetections.length.toString(),
                 trend: "up",
                 status: mockActiveDetections.length > 5 ? "high" : "low"
@@ -218,8 +224,29 @@ export const RiskService = {
         }
     },
 
-    getRiskTrend: async (_query?: LocationQuery): Promise<RiskChartData> => {
-        return new Promise((resolve) => setTimeout(() => resolve(mockChartData), 800));
+    getRiskTrend: async (query?: LocationQuery): Promise<RiskChartData> => {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const cond = getConditionsForCountry(query?.country);
+                const baseScore = calculateFallbackRisk(cond.temp, cond.humidity, cond.wind, cond.veg_moisture);
+                
+                // Deep copy the mock data
+                const dynamicChartData = JSON.parse(JSON.stringify(mockChartData)) as RiskChartData;
+                
+                // Adjust data points using the region's baseScore as an anchor
+                dynamicChartData.datasets[0].data = dynamicChartData.datasets[0].data.map((val) => {
+                    const offset = baseScore - 50; 
+                    return Math.max(0, Math.min(100, Math.round(val + offset + (Math.random() * 5 - 2.5))));
+                });
+                
+                dynamicChartData.datasets[1].data = dynamicChartData.datasets[1].data.map((val) => {
+                    const offset = baseScore - 50;
+                    return Math.max(0, Math.min(100, Math.round(val + offset)));
+                });
+
+                resolve(dynamicChartData);
+            }, 800);
+        });
     },
 
     getGlobalSummary: async (query?: LocationQuery): Promise<any> => {

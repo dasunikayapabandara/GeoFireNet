@@ -46,17 +46,23 @@ const DashboardOverview: React.FC = () => {
             <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 <div>
                     <h2>GeoFireNet Global Terminal</h2>
-                    <span className="last-updated">Real-time geospatial intelligence</span>
+                    <span className="last-updated">
+                        {viewMode === 'predictive' 
+                            ? 'Future simulation: AI-driven predictive risk intelligence.' 
+                            : 'Live monitoring: Confirmed active thermal satellite detections.'}
+                    </span>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                     <div style={{ background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.375rem', display: 'flex', gap: '0.5rem' }}>
                         <button
                             className={`btn ${viewMode === 'predictive' ? 'btn-primary' : 'btn-ghost'}`}
                             onClick={() => setViewMode('predictive')}
+                            title="Forecast future fire risks using ML models"
                         >Predictive Risk</button>
                         <button
                             className={`btn ${viewMode === 'active' ? 'btn-primary' : 'btn-ghost'}`}
                             onClick={() => setViewMode('active')}
+                            title="View current fires detected by live satellites"
                             style={{ background: viewMode === 'active' ? 'var(--accent-risk-extreme)' : 'transparent' }}
                         >Active Detections</button>
                     </div>
@@ -91,9 +97,10 @@ const DashboardOverview: React.FC = () => {
             </div>
 
             <div className="dashboard-main-content">
-                <div className="chart-section card">
+                <div className="chart-section card" style={{ opacity: viewMode === 'active' ? 0.3 : 1, transition: 'opacity 0.3s ease' }}>
                     <div className="section-header">
-                        <h3>7-Day Risk Forecast</h3>
+                        <h3>7-Day Risk Forecast {countryFilter ? `for ${countryFilter}` : 'Globally'}</h3>
+                        {viewMode === 'active' && <span style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1rem'}}>(Predictive Model Only)</span>}
                     </div>
                     <RiskChart data={chartData} />
                 </div>
