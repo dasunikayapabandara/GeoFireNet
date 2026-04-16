@@ -1,10 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, CheckCircle2, AlertTriangle, Loader2, RotateCw } from 'lucide-react';
+import { Camera, RefreshCw, CheckCircle2, AlertTriangle, Loader2, RotateCw, Upload } from 'lucide-react';
 import '../../styles/ReactiveCapture.css';
 
 const ReactiveCapture: React.FC = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [stream, setStream] = useState<MediaStream | null>(null);
     const [result, setResult] = useState<{ is_fire: boolean; confidence: number; message: string } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -20,6 +21,14 @@ const ReactiveCapture: React.FC = () => {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            analyzeImage(file);
+        }
+        if (event.target) event.target.value = '';
+    };
 
     const startCamera = async () => {
         try {
@@ -118,6 +127,13 @@ const ReactiveCapture: React.FC = () => {
                             }} 
                         />
                         <canvas ref={canvasRef} className="hidden-canvas" />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            style={{ display: 'none' }}
+                        />
                         {isLoading && (
                             <div className="loading-overlay">
                                 <Loader2 className="animate-spin" size={48} />
@@ -134,6 +150,15 @@ const ReactiveCapture: React.FC = () => {
                         >
                             <Camera size={20} />
                             Capture & Analyze
+                        </button>
+                        <button 
+                            className="reset-btn" 
+                            onClick={() => fileInputRef.current?.click()} 
+                            type="button" 
+                            disabled={isLoading}
+                        >
+                            <Upload size={20} />
+                            Upload Photo
                         </button>
                         <button className="reset-btn" onClick={rotateCamera} type="button">
                             <RotateCw size={20} />
