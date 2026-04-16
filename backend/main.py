@@ -83,6 +83,14 @@ app.include_router(models.router, prefix="/models", tags=["Models Overview"])
 app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 app.include_router(health.router, prefix="/health", tags=["Health"])
 
+@app.get("/", tags=["Root"])
+async def root():
+    return {
+        "status": "online",
+        "message": "GeoFireNet API is running. Visit /docs for Swagger UI documentation.",
+        "endpoints": ["/predict", "/history", "/alerts", "/system/status"]
+    }
+
 @app.get("/system/status", tags=["Health"])
 async def get_system_status(db: Session = Depends(get_db), predictor = Depends(get_predictor)):
     """Aggregated system layout mapping overall operational readiness."""
