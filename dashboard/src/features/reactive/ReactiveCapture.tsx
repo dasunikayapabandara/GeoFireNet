@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, CheckCircle2, AlertTriangle, Loader2, RotateCw, Upload } from 'lucide-react';
+import { Camera, RefreshCw, CheckCircle2, AlertTriangle, Loader2, RotateCw, Upload, Video, VideoOff } from 'lucide-react';
 import '../../styles/ReactiveCapture.css';
 
 const ReactiveCapture: React.FC = () => {
@@ -33,14 +33,30 @@ const ReactiveCapture: React.FC = () => {
     const startCamera = async () => {
         try {
             setError(null);
-            const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+            });
             setStream(mediaStream);
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
             }
         } catch (err) {
             console.error("Error accessing camera:", err);
-            setError("Could not access camera. Please ensure permissions are granted.");
+            setError("Could not access the camera. Please check permissions.");
+        }
+    };
+
+    const toggleCamera = () => {
+        if (stream) {
+            // Turn off
+            stream.getTracks().forEach(track => track.stop());
+            setStream(null);
+            if (videoRef.current) {
+                videoRef.current.srcObject = null;
+            }
+        } else {
+            // Turn on
+            startCamera();
         }
     };
 
@@ -126,6 +142,12 @@ const ReactiveCapture: React.FC = () => {
                                 scale: (rotation === 90 || rotation === 270) ? '1.3' : '1'
                             }} 
                         />
+                        {!stream && !error && !isLoading && (
+                            <div className="camera-off-overlay" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', color: 'white', zIndex: 5 }}>
+                                <VideoOff size={48} style={{ marginBottom: '1rem', opacity: 0.7 }} />
+                                <span>Camera is Off</span>
+                            </div>
+                        )}
                         <canvas ref={canvasRef} className="hidden-canvas" />
                         <input
                             type="file"
@@ -150,6 +172,15 @@ const ReactiveCapture: React.FC = () => {
                         >
                             <Camera size={20} />
                             Capture & Analyze
+                        </button>
+                        <button 
+                            className="reset-btn" 
+                            onClick={toggleCamera} 
+                            type="button" 
+                            disabled={isLoading}
+                        >
+                            {stream ? <VideoOff size={20} /> : <Video size={20} />}
+                            {stream ? "Turn Off" : "Turn On"}
                         </button>
                         <button 
                             className="reset-btn" 
@@ -200,12 +231,7 @@ const ReactiveCapture: React.FC = () => {
                 </div>
             </div>
 
-            <div className="reactive-footer">
-                <div className="info-card">
-                    <h4>Why "Reactive"?</h4>
-                    <p>Traditional systems react to sensors (like visuals or smoke detectors) AFTER ignition. GeoFireNet's Reactive mode demonstrates this immediate detection capability.</p>
-                </div>
-            </div>
+
         </div>
     );
 };

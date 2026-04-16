@@ -14,6 +14,15 @@
   --accent-risk-high: #f97316; /* Orange 500 */
   --accent-risk-extreme: #ef4444; /* Red 500 */
 
+  /* Light Theme Overrides */
+  &.light-theme {
+    --bg-primary: #f8fafc; /* Slate 50 */
+    --bg-secondary: #ffffff; /* White */
+    --bg-tertiary: #e2e8f0; /* Slate 200 */
+    --text-primary: #0f172a; /* Slate 900 */
+    --text-secondary: #475569; /* Slate 600 */
+  }
+
   /* Layout */
   --sidebar-width: 280px;
   --header-height: 64px;

@@ -62,54 +62,72 @@ const Analytics: React.FC = () => {
     const [region, setRegion] = useState('');
     const [isDetectionMode, setIsDetectionMode] = useState(false);
 
-    // Mock Data Generators for Dashboard
-    const trendData = {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        datasets: [
-            {
-                label: 'Avg Risk Score',
-                data: [42, 45, 55, 68, 74, 82, 78],
-                borderColor: colors.primary,
-                backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                fill: true,
-                tension: 0.4
+    // Recalculate Data based on UI Filters
+    const { trendData, distData, regionData, driversData, kpis } = React.useMemo(() => {
+        let mult = 1;
+        if (timeRange === '24h') mult *= 0.5;
+        if (timeRange === '30d') mult *= 2.5;
+
+        // Regional multipliers
+        if (region === 'USA') mult *= 1.2;
+        if (region === 'Australia') mult *= 1.5;
+        if (region === 'Greece') mult *= 0.8;
+        
+        if (isDetectionMode) mult *= 0.7; // Active mode has fewer counts than predictive globally
+
+        return {
+            trendData: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [
+                    {
+                        label: 'Avg Risk Score',
+                        data: [42, 45, 55, 68, 74, 82, 78].map(v => Math.min(100, Math.round(v * (mult > 1.5 ? 1.2 : mult < 0.5 ? 0.8 : 1)))), // Flatten extreme spikes for 0-100 logic
+                        borderColor: colors.primary,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            distData: {
+                labels: ['Low', 'Moderate', 'High', 'Extreme'],
+                datasets: [{
+                    data: [45, 30, 15, 10].map(v => Math.round(v * mult)),
+                    backgroundColor: [colors.low, colors.moderate, colors.high, colors.extreme],
+                    borderWidth: 0
+                }]
+            },
+            regionData: {
+                labels: ['Napa Valley', 'Sonoma', 'Mendocino', 'Lake County', 'Santa Cruz', 'Marin'],
+                datasets: [{
+                    label: 'Extreme Risk Count',
+                    data: [24, 18, 12, 8, 15, 5].map(v => Math.round(v * mult)),
+                    backgroundColor: colors.extreme,
+                    borderRadius: 4
+                }]
+            },
+            driversData: {
+                labels: ['Dry Vegetation', 'High Wind', 'Low Humidity', 'High Temp'],
+                datasets: [{
+                    label: 'Driver Influence %',
+                    data: [45, 30, 15, 10].map(v => Math.round(v * mult)),
+                    backgroundColor: colors.primary,
+                    borderRadius: 4
+                }]
+            },
+            kpis: {
+                predictions: Math.round(14230 * mult).toLocaleString(),
+                avgRisk: Math.min(100, Math.round(68 * (mult > 1.5 ? 1.2 : mult < 0.5 ? 0.8 : 1))),
+                extremeCount: Math.round(1402 * mult).toLocaleString(),
+                activeAlerts: Math.round(24 * mult)
             }
-        ]
-    };
-
-    const distData = {
-        labels: ['Low', 'Moderate', 'High', 'Extreme'],
-        datasets: [{
-            data: [45, 30, 15, 10],
-            backgroundColor: [colors.low, colors.moderate, colors.high, colors.extreme],
-            borderWidth: 0
-        }]
-    };
-
-    const regionData = {
-        labels: ['Napa Valley', 'Sonoma', 'Mendocino', 'Lake County', 'Santa Cruz', 'Marin'],
-        datasets: [{
-            label: 'Extreme Risk Count',
-            data: [24, 18, 12, 8, 15, 5],
-            backgroundColor: colors.extreme,
-            borderRadius: 4
-        }]
-    };
-
-    const driversData = {
-        labels: ['Dry Vegetation', 'High Wind', 'Low Humidity', 'High Temp'],
-        datasets: [{
-            label: 'Driver Influence %',
-            data: [45, 30, 15, 10],
-            backgroundColor: colors.primary,
-            borderRadius: 4
-        }]
-    };
+        };
+    }, [timeRange, region, isDetectionMode]);
 
     const recentAlerts = [
-        { id: 1, title: 'Extreme Fire Weather', region: 'Napa Valley Sector A', time: '10 mins ago', level: 'extreme' },
-        { id: 2, title: 'Elevated High Winds', region: 'Sonoma Ridge', time: '1 hour ago', level: 'high' },
-        { id: 3, title: 'Dry Vegetation Threshold', region: 'Santa Cruz Mountains', time: '3 hours ago', level: 'moderate' },
+        { id: 1, title: 'Extreme Fire Weather', region: region || 'Global Parameter', time: '10 mins ago', level: 'extreme' },
+        { id: 2, title: 'Elevated High Winds', region: 'Sector B', time: '1 hour ago', level: 'high' },
+        { id: 3, title: 'Dry Vegetation Threshold', region: 'Zone Alpha', time: '3 hours ago', level: 'moderate' },
     ];
 
     return (
@@ -160,11 +178,11 @@ const Analytics: React.FC = () => {
                 <ul className="insight-list">
                     <li className="insight-item">
                         <TrendingUp size={18} color="var(--accent-risk-extreme)" />
-                        <span>Average risk score increased by <strong>12%</strong> over the last 48 hours due to incoming warm fronts.</span>
+                        <span>Average risk score trending based on current time window and regional filters.</span>
                     </li>
                     <li className="insight-item">
                         <Map size={18} color="var(--accent-primary)" />
-                        <span><strong>Napa Valley</strong> holds the highest concentration of Extreme Risk predictions this week.</span>
+                        <span><strong>{region || 'Global regions'}</strong> showing variable distribution in Extreme Risk predictions.</span>
                     </li>
                     <li className="insight-item">
                         <Wind size={18} color="var(--accent-risk-med)" />
@@ -180,32 +198,32 @@ const Analytics: React.FC = () => {
                         <span>Total Predictions</span>
                         <Activity size={18} />
                     </div>
-                    <div className="kpi-value">14,230</div>
-                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> +5.2% vs last week</div>
+                    <div className="kpi-value">{kpis.predictions}</div>
+                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> Tracking</div>
                 </div>
                 <div className="kpi-card">
                     <div className="kpi-header">
                         <span>Avg Risk Score</span>
                         <Activity size={18} />
                     </div>
-                    <div className="kpi-value">68/100</div>
-                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> +2.1%</div>
+                    <div className="kpi-value">{kpis.avgRisk}/100</div>
+                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> Regional Baseline</div>
                 </div>
                 <div className="kpi-card">
                     <div className="kpi-header">
                         <span>High/Extreme Count</span>
                         <Flame size={18} color="var(--accent-risk-extreme)" />
                     </div>
-                    <div className="kpi-value">1,402</div>
-                    <div className="kpi-trend trend-down"><ArrowDownRight size={14} /> -1.5%</div>
+                    <div className="kpi-value">{kpis.extremeCount}</div>
+                    <div className="kpi-trend trend-down"><ArrowDownRight size={14} /> Dynamic</div>
                 </div>
                 <div className="kpi-card">
                     <div className="kpi-header">
                         <span>Active Alerts</span>
                         <AlertOctagon size={18} color="var(--accent-risk-high)" />
                     </div>
-                    <div className="kpi-value">24</div>
-                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> +12%</div>
+                    <div className="kpi-value">{kpis.activeAlerts}</div>
+                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> Tracking</div>
                 </div>
             </div>
 

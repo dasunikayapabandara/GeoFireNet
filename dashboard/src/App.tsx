@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import MapComponent from './features/map/MapComponent';
@@ -19,6 +19,20 @@ import Footer from './components/Footer';
 function App() {
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Apply theme on first render based on saved settings
+  useEffect(() => {
+    const stored = localStorage.getItem('geofirenet_settings');
+    if (stored) {
+      try {
+        if (JSON.parse(stored).theme === 'light') {
+          document.documentElement.classList.add('light-theme');
+        }
+      } catch (e) {
+        // ignored
+      }
+    }
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {

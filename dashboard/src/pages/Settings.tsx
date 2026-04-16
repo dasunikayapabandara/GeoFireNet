@@ -13,6 +13,7 @@ interface SettingsState {
     defaultLandingPage: string;
     refreshInterval: number;
     preferredRegion: string;
+    stayLoggedIn: boolean;
 }
 
 const defaultSettings: SettingsState = {
@@ -26,6 +27,7 @@ const defaultSettings: SettingsState = {
     defaultLandingPage: 'dashboard',
     refreshInterval: 30,
     preferredRegion: 'Global',
+    stayLoggedIn: true,
 };
 
 const Settings: React.FC = () => {
@@ -52,6 +54,11 @@ const Settings: React.FC = () => {
     const handleSave = () => {
         try {
             localStorage.setItem('geofirenet_settings', JSON.stringify(settings));
+            
+            // Apply Visual Theme Live
+            if (settings.theme === 'light') document.documentElement.classList.add('light-theme');
+            else document.documentElement.classList.remove('light-theme');
+
             setStatusMessage({ text: 'Settings saved successfully!', type: 'success' });
             setTimeout(() => setStatusMessage(null), 3000);
         } catch (e) {
@@ -63,6 +70,10 @@ const Settings: React.FC = () => {
         if (window.confirm("Are you sure you want to reset all settings to their default values?")) {
             setSettings(defaultSettings);
             localStorage.setItem('geofirenet_settings', JSON.stringify(defaultSettings));
+            
+            // Apply Default Visual Theme Live
+            document.documentElement.classList.remove('light-theme');
+
             setStatusMessage({ text: 'Settings reset to defaults.', type: 'success' });
             setTimeout(() => setStatusMessage(null), 3000);
         }
@@ -93,7 +104,7 @@ const Settings: React.FC = () => {
                         </div>
                     </div>
                     <div className="form-actions mt-4">
-                        <button className="btn btn-outline" disabled>Edit Profile</button>
+                        <button className="btn btn-outline" onClick={() => setStatusMessage({ text: 'Profile editing is disabled in demo mode.', type: 'error' })}>Edit Profile</button>
                         <button className="btn btn-danger" onClick={logout}>Log Out</button>
                     </div>
                 </div>
@@ -244,12 +255,16 @@ const Settings: React.FC = () => {
                             <label>Stay Logged In (Remember Me)</label>
                         </div>
                         <label className="toggle-switch">
-                            <input type="checkbox" defaultChecked />
+                            <input 
+                                type="checkbox" 
+                                checked={settings.stayLoggedIn}
+                                onChange={(e) => handleChange('stayLoggedIn', e.target.checked)}
+                            />
                             <span className="slider round" />
                         </label>
                     </div>
                     <div className="form-actions mt-4">
-                        <button className="btn btn-outline" disabled>Change Password (Mock)</button>
+                        <button className="btn btn-outline" onClick={() => setStatusMessage({ text: 'Password changes are restricted in demo mode.', type: 'error' })}>Change Password</button>
                     </div>
                 </div>
 
