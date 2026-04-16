@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Camera, RefreshCw, CheckCircle2, AlertTriangle, Loader2, RotateCw } from 'lucide-react';
 import '../../styles/ReactiveCapture.css';
 
 const ReactiveCapture: React.FC = () => {
@@ -9,6 +9,7 @@ const ReactiveCapture: React.FC = () => {
     const [result, setResult] = useState<{ is_fire: boolean; confidence: number; message: string } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [rotation, setRotation] = useState(0);
 
     useEffect(() => {
         startCamera();
@@ -39,6 +40,8 @@ const ReactiveCapture: React.FC = () => {
 
         const canvas = canvasRef.current;
         const video = videoRef.current;
+
+        // Optionally, one could apply the rotation mathematically on canvas, but typically backend handles all-angle detection
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const context = canvas.getContext('2d');
@@ -81,9 +84,14 @@ const ReactiveCapture: React.FC = () => {
         }
     };
 
+    const rotateCamera = () => {
+        setRotation(prev => (prev + 90) % 360);
+    };
+
     const reset = () => {
         setResult(null);
         setError(null);
+        setRotation(0);
     };
 
     return (
@@ -96,7 +104,19 @@ const ReactiveCapture: React.FC = () => {
             <div className="reactive-content">
                 <div className="camera-section">
                     <div className="video-wrapper">
-                        <video ref={videoRef} autoPlay playsInline muted />
+                        <video 
+                            ref={videoRef} 
+                            autoPlay 
+                            playsInline 
+                            muted 
+                            style={{ 
+                                /* Note order is important: scaleX flips it like a mirror BEFORE rotation */
+                                transform: `scaleX(-1) rotate(${rotation}deg)`, 
+                                transition: 'transform 0.3s ease',
+                                // If 90 or 270, adjust scale to cover black bars assuming 4:3 aspect
+                                scale: (rotation === 90 || rotation === 270) ? '1.3' : '1'
+                            }} 
+                        />
                         <canvas ref={canvasRef} className="hidden-canvas" />
                         {isLoading && (
                             <div className="loading-overlay">
@@ -114,6 +134,10 @@ const ReactiveCapture: React.FC = () => {
                         >
                             <Camera size={20} />
                             Capture & Analyze
+                        </button>
+                        <button className="reset-btn" onClick={rotateCamera} type="button">
+                            <RotateCw size={20} />
+                            Rotate
                         </button>
                         <button className="reset-btn" onClick={reset}>
                             <RefreshCw size={20} />
