@@ -5,6 +5,12 @@
 
 **An AI-driven dashboard for visualizing and predicting wildfire risk using satellite data and climate metrics.**
 
+## 🔗 Quick Links (When Running Local Servers)
+
+* **Dashboard App**: [http://localhost:5173](http://localhost:5173)
+* **Backend API Base**: [http://localhost:8000](http://localhost:8000)
+* **API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
 ## 🔥 The Paradigm Shift: Reactive vs. Predictive
 
 GeoFireNet represents a fundamental change in how we approach wildfire management:
@@ -46,11 +52,13 @@ The visual centerpiece of the project. Displays real-time risk alerts and intera
 
 ```bash
 cd dashboard
+# We recommend Node v20 for Vite compatibility (use nvm if installed)
+# source ~/.nvm/nvm.sh && nvm use 20
 npm install   # Install Node dependencies
 npm run dev   # Start local dev server
 ```
 
-> Open <http://localhost:5173>
+> **URL**: [http://localhost:5173](http://localhost:5173)
 
 ### 2. Run the Data Science Prototype
 
@@ -70,12 +78,18 @@ To serve the unified model to both apps via REST API.
 
 ```bash
 cd backend
+# Make sure to activate the virtual environment!
+source venv/bin/activate
 pip install -r requirements.txt
 python train_model.py  # Generate model.pkl
-python main.py         # Start API Server
+
+# Start the API Server from the root path
+cd ..
+PYTHONPATH=. python backend/main.py
 ```
 
-> API Docs at <http://localhost:8000/docs>
+> **API Base URL**: [http://localhost:8000](http://localhost:8000)
+> **Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ## 📊 Model Evaluation
 
