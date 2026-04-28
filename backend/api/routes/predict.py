@@ -40,7 +40,8 @@ def _background_db_save(features: schemas.PredictionRequest, result: dict, curre
         
         alert_record = evaluate_and_create_alert(
             db=db, prediction_log_id=prediction_log.id, location_id=prediction_log.location_id,
-            risk_score=result["risk_score"], primary_drivers=result["primary_drivers"]
+            risk_score=result["risk_score"], risk_level=result["risk_level"],
+            system_status=current_mode_value, primary_drivers=result["primary_drivers"]
         )
         if alert_record and getattr(alert_record, "id", None):
             logger.info(f"Alert {alert_record.id} triggered in background.")
@@ -98,7 +99,7 @@ async def predict_risk(
         logger.info(f"Prediction completed: risk_score={result['risk_score']}, level={result['risk_level']}")
         
         # Fast calculate if alert would trigger theoretically to notify UI immediately
-        alert_flag = result["risk_score"] >= settings.ALERT_MODERATE_THRESHOLD  # Moderate or higher threshold triggers evaluations
+        alert_flag = result["risk_level"] in ["High", "Extreme"] and current_mode.value == "PRODUCTION"
         
         # Offload all database writes
         background_tasks.add_task(_background_db_save, features, result, current_mode.value)
