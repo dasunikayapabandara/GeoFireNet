@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     EVAL_RESULTS_PATH: str = str(BASE_DIR / "artifacts" / "evaluation_results.json")
     CONFUSION_MATRIX_PATH: str = str(BASE_DIR / "artifacts" / "confusion_matrix.png")
     FEATURE_IMPORTANCE_PATH: str = str(BASE_DIR / "artifacts" / "feature_importance.png")
+    FEATURE_IMPORTANCE_JSON_PATH: str = str(BASE_DIR / "artifacts" / "feature_importance.json")
     DATA_DIR: str = str(BASE_DIR / "data")
     DATASET_PATH: str = str(BASE_DIR / "data" / "dataset.csv")
 
@@ -78,6 +79,7 @@ THRESHOLDS_PATH = settings.THRESHOLDS_PATH
 EVAL_RESULTS_PATH = settings.EVAL_RESULTS_PATH
 CONFUSION_MATRIX_PATH = settings.CONFUSION_MATRIX_PATH
 FEATURE_IMPORTANCE_PATH = settings.FEATURE_IMPORTANCE_PATH
+FEATURE_IMPORTANCE_JSON_PATH = settings.FEATURE_IMPORTANCE_JSON_PATH
 DATA_DIR = settings.DATA_DIR
 DATASET_PATH = settings.DATASET_PATH
 TARGET_COLUMN = settings.TARGET_COLUMN

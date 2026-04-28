@@ -72,32 +72,41 @@ class RiskPredictor:
         
     def _get_feature_contributions(self, input_df):
         """
-        Extract meaningful explanations. 
-        Instead of SHAP (heavy), we use the preprocessor to see engineered values and heuristic weights.
+        Extract meaningful explanations by weighting triggered conditions 
+        by the Random Forest's global feature importances.
         """
-        # We can extract the engineered DataFrame directly to see what actually spiked
         eng_df = self.model.named_steps['preprocessor'].named_steps['feature_eng'].transform(input_df)
-        
-        # We'll use heuristic rules coupled with engineered features to explain it
-        # Since Random Forest is complex to explain per-instance without SHAP, we use a hybrid approach
         row = eng_df.iloc[0]
-        drivers = []
         
-        if row.get('temp_wind_interaction', 0) > 0.4:
-            drivers.append("Critical Heat+Wind Interaction")
+        classifier = self.model.named_steps['classifier']
+        if not hasattr(classifier, 'feature_importances_'):
+            return ["Normal Conditions"]
             
-        if row['temp'] > settings.MOCK_PENALTY_TEMP:
-            drivers.append("High Temperature")
-            
-        if row['wind'] > settings.MOCK_PENALTY_WIND:
-            drivers.append("Strong Winds")
-            
-        if row['humidity'] < 30:
-            drivers.append("Critically Low Humidity")
-            
-        if row['veg_moisture'] < 0.3:
-            drivers.append("Dry Vegetation")
-            
-        return drivers[:3] if drivers else ["Normal Conditions"]
+        importances = classifier.feature_importances_
+        feature_names = self.model.named_steps['preprocessor'].named_steps['feature_eng'].get_feature_names_out()
+        importance_map = dict(zip(feature_names, importances))
+        
+        # Define conditions that push risk higher
+        conditions = {
+            "temp_wind_interaction": (row.get('temp_wind_interaction', 0) > 0.4, "Critical Heat+Wind Interaction"),
+            "temp": (row.get('temp', 0) > settings.MOCK_PENALTY_TEMP, "High Temperature"),
+            "wind": (row.get('wind', 0) > settings.MOCK_PENALTY_WIND, "Strong Winds"),
+            "humidity": (row.get('humidity', 100) < 30, "Critically Low Humidity"),
+            "veg_moisture": (row.get('veg_moisture', 1) < 0.3, "Dry Vegetation")
+        }
+        
+        drivers = []
+        # Sort features by the model's learned importance
+        sorted_features = sorted(importance_map.keys(), key=lambda k: importance_map[k], reverse=True)
+        
+        for feat in sorted_features:
+            if feat in conditions:
+                is_triggered, label = conditions[feat]
+                if is_triggered:
+                    drivers.append(label)
+            if len(drivers) >= 3:
+                break
+                
+        return drivers if drivers else ["Normal Conditions"]
         
 

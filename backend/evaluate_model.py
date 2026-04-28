@@ -69,6 +69,15 @@ def evaluate():
         feature_names = feature_eng.get_feature_names_out()
         importances = classifier.feature_importances_
         
+        # Save as JSON
+        feature_importance_dict = {
+            name: float(importance) 
+            for name, importance in zip(feature_names, importances)
+        }
+        with open(config.FEATURE_IMPORTANCE_JSON_PATH, 'w') as f:
+            json.dump(feature_importance_dict, f, indent=4)
+        print(f"Saved Feature Importances JSON to {config.FEATURE_IMPORTANCE_JSON_PATH}")
+        
         # Plot
         plt.figure(figsize=(8, 5))
         sns.barplot(x=importances, y=feature_names, palette='viridis')
@@ -77,7 +86,7 @@ def evaluate():
         plt.tight_layout()
         plt.savefig(config.FEATURE_IMPORTANCE_PATH)
         plt.close()
-        print(f"Saved Feature Importances to {config.FEATURE_IMPORTANCE_PATH}")
+        print(f"Saved Feature Importances PNG to {config.FEATURE_IMPORTANCE_PATH}")
     else:
         print("Selected model does not support feature_importances_. Plot skipped.")
 

@@ -1,5 +1,5 @@
 {
-    "selected_model": "Logistic Regression",
+    "selected_model": "RandomForestClassifier",
     "features": [
         "temp",
         "humidity",
@@ -7,42 +7,12 @@
         "veg_moisture"
     ],
     "training_parameters": {
-        "C": 1.0,
-        "class_weight": "balanced",
-        "dual": false,
-        "fit_intercept": true,
-        "intercept_scaling": 1,
-        "l1_ratio": 0.0,
-        "max_iter": 100,
-        "n_jobs": null,
-        "penalty": "deprecated",
-        "random_state": 42,
-        "solver": "lbfgs",
-        "tol": 0.0001,
-        "verbose": 0,
-        "warm_start": false
+        "classifier__max_depth": 10,
+        "classifier__min_samples_split": 5,
+        "classifier__n_estimators": 200
     },
     "metrics": {
-        "Recall": 0.9285378180550715,
-        "F1": 0.8768322843022919,
-        "ROC_AUC": 0.9783776100427388
-    },
-    "cv_results": {
-        "Logistic Regression": {
-            "Recall": 0.9285378180550715,
-            "F1": 0.8768322843022919,
-            "ROC_AUC": 0.9783776100427388
-        },
-        "Random Forest": {
-            "Recall": 0.8610665737190658,
-            "F1": 0.8696251590892633,
-            "ROC_AUC": 0.9729271434806581
-        },
-        "Gradient Boosting": {
-            "Recall": 0.8623649355176021,
-            "F1": 0.8661981274776336,
-            "ROC_AUC": 0.9719450800487008
-        }
+        "ROC_AUC": 0.972886011663384
     },
     "seed": 42
 }
