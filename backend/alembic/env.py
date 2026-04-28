@@ -69,7 +69,7 @@ def run_migrations_online() -> None:
     """
     # Override the sqlalchemy.url dynamically using our strongly typed settings
     config_section = config.get_section(config.config_ini_section)
-    from backend.core.config import settings
+    from backend.config import settings
     
     if settings.database_url:
         config_section["sqlalchemy.url"] = settings.database_url

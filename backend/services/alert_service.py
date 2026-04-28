@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from backend.core.config import settings
+from backend.config import settings
 from backend import schemas, crud
 from backend.core.logger import logger
 

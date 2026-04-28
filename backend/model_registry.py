@@ -1,8 +1,8 @@
 import joblib
 import json
 import os
-from backend.core.config import settings
-from backend.core import config
+from backend.config import settings
+from backend import config
 
 def save_model(pipeline, path=config.MODEL_PATH):
     """Save the scikit-learn pipeline (preprocessing + model) artifact."""

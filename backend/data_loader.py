@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from backend.core.config import settings
-from backend.core import config
+from backend.config import settings
+from backend import config
 import os
 
 def generate_synthetic_data(n_samples=3000, save_path=os.path.join(config.DATA_DIR, "dataset.csv"), seed=None):
@@ -18,9 +18,9 @@ def generate_synthetic_data(n_samples=3000, save_path=os.path.join(config.DATA_D
     print(f"Generating {n_samples} synthetic records...")
     
     # Feature distributions
-    temp = np.random.uniform(0, 50, n_samples)
-    humidity = np.random.uniform(0, 100, n_samples)
-    wind = np.random.uniform(0, 100, n_samples)
+    temp = np.random.uniform(settings.MIN_TEMP, settings.MAX_TEMP, n_samples)
+    humidity = np.random.uniform(0, settings.MAX_HUMIDITY, n_samples)
+    wind = np.random.uniform(0, settings.MAX_WIND, n_samples)
     veg_moisture = np.random.uniform(0, 1, n_samples)
     
     df = pd.DataFrame({
@@ -39,9 +39,9 @@ def generate_synthetic_data(n_samples=3000, save_path=os.path.join(config.DATA_D
     # Fill NA temporarily just for Ground Truth generation to not make it NA
     temp_hum = df['humidity'].fillna(method='ffill') 
     
-    nT = df['temp'] / 50.0
-    nH = temp_hum / 100.0
-    nW = df['wind'] / 100.0
+    nT = df['temp'] / settings.MAX_TEMP
+    nH = temp_hum / settings.MAX_HUMIDITY
+    nW = df['wind'] / settings.MAX_WIND
     nV = df['veg_moisture']
     
     # True underlying linear risk
@@ -54,9 +54,9 @@ def generate_synthetic_data(n_samples=3000, save_path=os.path.join(config.DATA_D
     # Add random noise
     true_score += np.random.normal(0, 5, n_samples)
     
-    # Define Binary Target: Risk > 50 is a 'Fire Risk Event'
+    # Define Binary Target: Risk > MODERATE THRESHOLD is a 'Fire Risk Event'
     # This establishes the dataset as a classification problem instead of regression
-    df[config.TARGET_COLUMN] = (true_score > 50).astype(int)
+    df[config.TARGET_COLUMN] = (true_score > settings.ALERT_MODERATE_THRESHOLD).astype(int)
     
     # Save to disk
     os.makedirs(os.path.dirname(save_path), exist_ok=True)

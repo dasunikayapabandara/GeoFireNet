@@ -4,7 +4,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
 from sklearn.model_selection import cross_validate
-from backend.core import config
+from backend import config
 from backend import data_loader, features, model_registry
 
 def train_and_compare():

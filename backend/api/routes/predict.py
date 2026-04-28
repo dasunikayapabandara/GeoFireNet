@@ -9,6 +9,7 @@ from backend import schemas, crud
 from backend.services.prediction_service import RiskPredictor
 from backend.services.alert_service import evaluate_and_create_alert
 from backend.core.logger import logger
+from backend.config import settings
 
 router = APIRouter()
 
@@ -87,7 +88,7 @@ async def predict_risk(
         logger.info(f"Prediction completed: risk_score={result['risk_score']}, level={result['risk_level']}")
         
         # Fast calculate if alert would trigger theoretically to notify UI immediately
-        alert_flag = result["risk_score"] >= 50.0  # Moderate or higher threshold triggers evaluations
+        alert_flag = result["risk_score"] >= settings.ALERT_MODERATE_THRESHOLD  # Moderate or higher threshold triggers evaluations
         
         # Offload all database writes
         background_tasks.add_task(_background_db_save, features, result, current_mode.value)

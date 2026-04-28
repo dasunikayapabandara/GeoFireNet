@@ -1,7 +1,7 @@
 import json
 import numpy as np
 from sklearn.metrics import recall_score, precision_score, f1_score
-from backend.core import config
+from backend import config
 from backend import data_loader, model_registry
 
 def calibrate():

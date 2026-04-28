@@ -1,5 +1,6 @@
 import os
 import sys
+from backend.config import settings
 
 # Pure Python Model Logic (Standalone for Stress Testing)
 class PurePythonModel:
@@ -8,9 +9,9 @@ class PurePythonModel:
 
     def predict(self, temp, hum, wind, veg):
         # Logic mirroring the main model
-        n_temp = min(max(temp / 50.0, 0), 1)
-        n_hum = min(max(hum / 100.0, 0), 1)
-        n_wind = min(max(wind / 100.0, 0), 1)
+        n_temp = min(max(temp / settings.MAX_TEMP, 0), 1)
+        n_hum = min(max(hum / settings.MAX_HUMIDITY, 0), 1)
+        n_wind = min(max(wind / settings.MAX_WIND, 0), 1)
         n_veg = min(max(veg, 0), 1)
         
         # Linear Score

@@ -1,5 +1,5 @@
 import pandas as pd
-from backend.core.config import RISK_LEVELS_DEFAULT
+from backend.config import RISK_LEVELS_DEFAULT, settings
 from backend import model_registry
 from backend.core.logger import logger
 
@@ -45,7 +45,7 @@ class RiskPredictor:
         if self.is_mock:
             # Fallback mock logic if ML artifact is missing
             probability = baseline_score / 100.0
-            if temp > 35 and wind > 60:
+            if temp > settings.MOCK_PENALTY_TEMP and wind > settings.MOCK_PENALTY_WIND:
                 probability += 0.2
             probability = min(probability, 1.0)
             
@@ -79,9 +79,9 @@ class RiskPredictor:
 
     def _calculate_heuristic_baseline(self, temp, humidity, wind, veg_moisture):
         """Simulate the Canadian FWI heuristic logic for comparison."""
-        n_temp = min(temp / 50.0, 1.0)
-        n_hum = min(humidity / 100.0, 1.0)
-        n_wind = min(wind / 100.0, 1.0)
+        n_temp = min(temp / settings.MAX_TEMP, 1.0)
+        n_hum = min(humidity / settings.MAX_HUMIDITY, 1.0)
+        n_wind = min(wind / settings.MAX_WIND, 1.0)
         n_veg = min(veg_moisture, 1.0)
         
         score = (40 * n_temp) + (20 * n_wind) - (30 * n_hum) - (30 * n_veg) + 40
@@ -103,10 +103,10 @@ class RiskPredictor:
         if row.get('temp_wind_interaction', 0) > 0.4:
             drivers.append("Critical Heat+Wind Interaction")
             
-        if row['temp'] > 35:
+        if row['temp'] > settings.MOCK_PENALTY_TEMP:
             drivers.append("High Temperature")
             
-        if row['wind'] > 60:
+        if row['wind'] > settings.MOCK_PENALTY_WIND:
             drivers.append("Strong Winds")
             
         if row['humidity'] < 30:
@@ -120,7 +120,7 @@ class RiskPredictor:
     def _get_heuristic_drivers(self, temp, humidity, wind, veg):
         """Fallback driver logic."""
         drivers = []
-        if temp > 35 and wind > 60: drivers.append("Heat+Wind Interaction")
-        if temp > 35: drivers.append("High Temperature")
-        if wind > 60: drivers.append("Strong Winds")
+        if temp > settings.MOCK_PENALTY_TEMP and wind > settings.MOCK_PENALTY_WIND: drivers.append("Heat+Wind Interaction")
+        if temp > settings.MOCK_PENALTY_TEMP: drivers.append("High Temperature")
+        if wind > settings.MOCK_PENALTY_WIND: drivers.append("Strong Winds")
         return drivers[:3] if drivers else ["Normal Conditions"]
