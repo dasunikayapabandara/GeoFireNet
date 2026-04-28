@@ -85,12 +85,22 @@ def train_and_compare():
     model_registry.save_model(final_pipeline)
     
     # We can also save a small metadata file
+    best_model_obj = models[best_model_name]
     meta = {
         "selected_model": best_model_name,
+        "features": config.RAW_FEATURES,
+        "training_parameters": best_model_obj.get_params() if hasattr(best_model_obj, "get_params") else {},
+        "metrics": {
+            "Recall": results[best_model_name]["Recall"],
+            "F1": results[best_model_name]["F1"],
+            "ROC_AUC": results[best_model_name]["ROC_AUC"]
+        },
         "cv_results": results,
         "seed": config.RANDOM_SEED
     }
     import json
+    import os
+    os.makedirs(config.ARTIFACTS_DIR, exist_ok=True)
     with open(config.ARTIFACTS_DIR / "training_meta.json", "w") as f:
         json.dump(meta, f, indent=4)
         

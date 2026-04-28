@@ -10,13 +10,18 @@ except ImportError:
     pass
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-MODEL_PATH = str(BASE_DIR / "models" / "RandomForest_latest.joblib")
+ARTIFACTS_DIR = BASE_DIR / "artifacts"
+MODEL_PATH = str(ARTIFACTS_DIR / "model.pkl")
 DATA_DIR = str(BASE_DIR / "data")
 DATASET_PATH = str(BASE_DIR / "data" / "dataset.csv")
 TARGET_COLUMN = "is_fire_risk"
 RAW_FEATURES = ["temp", "humidity", "wind", "veg_moisture"]
 RANDOM_SEED = 42
-THRESHOLDS_PATH = str(BASE_DIR / "models" / "risk_thresholds.json")
+TEST_SIZE = 0.2
+THRESHOLDS_PATH = str(ARTIFACTS_DIR / "risk_thresholds.json")
+EVAL_RESULTS_PATH = str(ARTIFACTS_DIR / "evaluation_results.json")
+CONFUSION_MATRIX_PATH = str(ARTIFACTS_DIR / "confusion_matrix.png")
+FEATURE_IMPORTANCE_PATH = str(ARTIFACTS_DIR / "feature_importance.png")
 RISK_LEVELS_DEFAULT = {"Low": 0.3, "Moderate": 0.5, "High": 0.8}
 
 class Settings(BaseSettings):
