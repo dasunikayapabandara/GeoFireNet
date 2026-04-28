@@ -60,8 +60,6 @@ async def predict_risk(
     current_mode = schemas.SystemMode.PRODUCTION
     if os.environ.get("SIMULATE_OUTAGE") == "1":
         current_mode = schemas.SystemMode.DEGRADED
-    elif predictor.is_mock:
-        current_mode = schemas.SystemMode.SIMULATION
 
     if current_mode == schemas.SystemMode.DEGRADED:
         return schemas.PredictionResponse(
@@ -106,6 +104,10 @@ async def predict_risk(
             location_id=None,
             timestamp=datetime.utcnow()
         )
+    except RuntimeError as e:
+        if "Model not trained" in str(e):
+            raise HTTPException(status_code=503, detail="Model not trained. Run training pipeline.")
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         logger.error(f"Prediction API Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Prediction Error")

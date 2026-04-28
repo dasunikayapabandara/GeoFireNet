@@ -9,12 +9,10 @@ class RiskPredictor:
             logger.info("Initializing Risk Predictor Engine...")
             self.model = model_registry.load_model()
             self.thresholds = model_registry.load_thresholds()
-            self.is_mock = False
         except Exception as e:
-            logger.warning(f"Failed to load model from registry: {e}. Running in degraded mock mode.")
+            logger.error(f"Failed to load model/thresholds from registry: {e}")
             self.model = None
-            self.thresholds = RISK_LEVELS_DEFAULT
-            self.is_mock = True
+            self.thresholds = None
 
     def get_risk_level(self, probability):
         """Map raw probability to a qualitative Risk Level based on calibrated thresholds."""
@@ -29,6 +27,9 @@ class RiskPredictor:
 
     def predict(self, temp: float, humidity: float, wind: float, veg_moisture: float):
         """Execute a safe prediction on incoming data."""
+        if self.model is None or self.thresholds is None:
+            raise RuntimeError("Model not trained. Run training pipeline.")
+            
         # The schema validation and basic clamping happens in FastAPI (main.py).
         # We pass it to pandas to match the pipeline's expected format.
         
@@ -41,23 +42,6 @@ class RiskPredictor:
         
         baseline_score = self._calculate_heuristic_baseline(temp, humidity, wind, veg_moisture)
         baseline_level = self.get_risk_level(baseline_score / 100.0)
-        
-        if self.is_mock:
-            # Fallback mock logic if ML artifact is missing
-            probability = baseline_score / 100.0
-            if temp > settings.MOCK_PENALTY_TEMP and wind > settings.MOCK_PENALTY_WIND:
-                probability += 0.2
-            probability = min(probability, 1.0)
-            
-            return {
-                "risk_score": round(probability * 100, 2), # Scale 0-100 for legacy compatibility
-                "risk_probability": round(probability, 4),
-                "risk_level": self.get_risk_level(probability),
-                "baseline_score": round(baseline_score, 2),
-                "baseline_level": baseline_level,
-                "primary_drivers": self._get_heuristic_drivers(temp, humidity, wind, veg_moisture),
-                "is_mock": True
-            }
             
         # ML Inference
         # Get probability of class 1 (High Risk Fire Condition)
@@ -73,8 +57,7 @@ class RiskPredictor:
             "risk_level": self.get_risk_level(probability),
             "baseline_score": round(baseline_score, 2),
             "baseline_level": baseline_level,
-            "primary_drivers": self._get_feature_contributions(input_data),
-            "is_mock": False
+            "primary_drivers": self._get_feature_contributions(input_data)
         }
 
     def _calculate_heuristic_baseline(self, temp, humidity, wind, veg_moisture):
@@ -117,10 +100,4 @@ class RiskPredictor:
             
         return drivers[:3] if drivers else ["Normal Conditions"]
         
-    def _get_heuristic_drivers(self, temp, humidity, wind, veg):
-        """Fallback driver logic."""
-        drivers = []
-        if temp > settings.MOCK_PENALTY_TEMP and wind > settings.MOCK_PENALTY_WIND: drivers.append("Heat+Wind Interaction")
-        if temp > settings.MOCK_PENALTY_TEMP: drivers.append("High Temperature")
-        if wind > settings.MOCK_PENALTY_WIND: drivers.append("Strong Winds")
-        return drivers[:3] if drivers else ["Normal Conditions"]
+

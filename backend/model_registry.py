@@ -30,7 +30,10 @@ def save_thresholds(threshold_dict, path=config.THRESHOLDS_PATH):
 def load_thresholds(path=config.THRESHOLDS_PATH):
     """Load calibrated probability thresholds."""
     if not os.path.exists(path):
-        print(f"Warning: thresholds not found at {path}. Using default.")
-        return config.RISK_LEVELS_DEFAULT
+        raise FileNotFoundError(
+            f"Threshold artifact not found at: {path}\n"
+            f"Please run the calibration pipeline first:\n"
+            f"  python -m backend.calibrate_thresholds"
+        )
     with open(path, 'r') as f:
         return json.load(f)

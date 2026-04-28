@@ -26,8 +26,8 @@ async def startup_event():
     logger.info("GeoFireNet API starting up...")
     # Log model readiness
     predictor = get_predictor()
-    if getattr(predictor, "is_mock", False):
-        logger.warning("Predictor is running in MOCK mode.")
+    if predictor.model is None or predictor.thresholds is None:
+        logger.error("CRITICAL: Predictor ML artifacts are missing. System will fail on prediction requests.")
     else:
         logger.info("Predictor ML artifacts loaded successfully.")
     
@@ -101,7 +101,7 @@ async def get_system_status(db: Session = Depends(get_db), predictor = Depends(g
         logger.error(f"/system/status database check failed: {e}")
         db_status = "degraded"
         
-    model_status = "healthy" if not getattr(predictor, "is_mock", False) else "degraded"
+    model_status = "healthy" if predictor.model is not None and predictor.thresholds is not None else "missing"
     status_code = "healthy" if db_status == "healthy" and model_status == "healthy" else "degraded"
     
     return {
