@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"
     SIMULATE_OUTAGE: bool = False
+    WEATHER_API_KEY: str | None = os.getenv("WEATHER_API_KEY")
 
     # Directories and File Paths
     ARTIFACTS_DIR: str = str(BASE_DIR / "artifacts")
@@ -70,6 +71,7 @@ settings = Settings()
 # Module-level aliases for backward compatibility
 ENVIRONMENT = settings.ENVIRONMENT
 SIMULATE_OUTAGE = settings.SIMULATE_OUTAGE
+WEATHER_API_KEY = settings.WEATHER_API_KEY
 ARTIFACTS_DIR = settings.ARTIFACTS_DIR
 MODEL_PATH = settings.MODEL_PATH
 THRESHOLDS_PATH = settings.THRESHOLDS_PATH

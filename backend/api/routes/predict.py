@@ -76,6 +76,18 @@ async def predict_risk(
         
     try:
         logger.info(f"Processing prediction request for mode={current_mode.value}, region={features.admin_region}, country={features.country}")
+        # Ingestion Flow
+        if features.temp is None or features.humidity is None or features.wind is None or features.veg_moisture is None:
+            from backend.services.data_ingestion import fetch_realtime_weather
+            logger.info("Missing environmental features. Fetching real-time weather data.")
+            real_data = await fetch_realtime_weather(features.latitude, features.longitude)
+            
+            # Use fetched data, fallback to user provided if only partially missing
+            features.temp = features.temp if features.temp is not None else real_data["temp"]
+            features.humidity = features.humidity if features.humidity is not None else real_data["humidity"]
+            features.wind = features.wind if features.wind is not None else real_data["wind"]
+            features.veg_moisture = features.veg_moisture if features.veg_moisture is not None else real_data["veg_moisture"]
+
         # Delegate to Prediction Engine
         result = predictor.predict(
             temp=features.temp,

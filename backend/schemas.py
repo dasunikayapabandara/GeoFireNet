@@ -9,10 +9,10 @@ class SystemMode(str, Enum):
     DEGRADED = "DEGRADED"
 
 class PredictionRequest(BaseModel):
-    temp: float
-    humidity: float
-    wind: float
-    veg_moisture: float
+    temp: Optional[float] = None
+    humidity: Optional[float] = None
+    wind: Optional[float] = None
+    veg_moisture: Optional[float] = None
     country: str = "Unknown"
     admin_region: str = "Unknown"
     latitude: float = 0.0
@@ -21,6 +21,7 @@ class PredictionRequest(BaseModel):
     @field_validator('temp')
     @classmethod
     def clamp_temp(cls, v):
+        if v is None: return v
         if v < -20.0 or v > 60.0:
             return max(-20.0, min(v, 60.0))
         return v
@@ -28,6 +29,7 @@ class PredictionRequest(BaseModel):
     @field_validator('humidity')
     @classmethod
     def clamp_humidity(cls, v):
+        if v is None: return v
         if v < 0.0 or v > 100.0:
             return max(0.0, min(v, 100.0))
         return v
@@ -35,6 +37,7 @@ class PredictionRequest(BaseModel):
     @field_validator('wind')
     @classmethod
     def clamp_wind(cls, v):
+        if v is None: return v
         if v < 0.0 or v > 150.0:
             return max(0.0, min(v, 150.0))
         return v
@@ -42,6 +45,7 @@ class PredictionRequest(BaseModel):
     @field_validator('veg_moisture')
     @classmethod
     def clamp_veg(cls, v):
+        if v is None: return v
         if v < 0.0 or v > 1.0:
             return max(0.0, min(v, 1.0))
         return v
