@@ -37,7 +37,7 @@ def generate_synthetic_data(n_samples=3000, save_path=os.path.join(config.DATA_D
     
     # Ground Truth Risk Logic
     # Fill NA temporarily just for Ground Truth generation to not make it NA
-    temp_hum = df['humidity'].fillna(method='ffill') 
+    temp_hum = df['humidity'].ffill()
     
     nT = df['temp'] / settings.MAX_TEMP
     nH = temp_hum / settings.MAX_HUMIDITY

@@ -1,5 +1,6 @@
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
 from backend import config
 from backend import data_loader, features, model_registry
 
@@ -18,8 +19,6 @@ def train_and_compare():
     preprocessor = features.create_preprocessing_pipeline()
     
     # 3. Define the Production Model (Random Forest)
-    from sklearn.model_selection import GridSearchCV
-    
     rf = RandomForestClassifier(class_weight='balanced', random_state=config.RANDOM_SEED)
     
     pipeline = Pipeline(steps=[

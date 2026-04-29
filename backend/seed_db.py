@@ -89,12 +89,14 @@ def seed_database():
             
             if level in ["High", "Extreme"]:
                 alert = models.Alert(
-                    timestamp=pred.timestamp + timedelta(minutes=random.randint(1, 15)),
+                    triggered_at=pred.timestamp + timedelta(minutes=random.randint(1, 15)),
                     prediction_id=pred.id,
-                    alert_level=level,
-                    message=f"Automated {level} risk alert for {loc.name}. Please review conditions.",
-                    is_acknowledged=random.choice([True, False]),
-                    acknowledged_by="admin" if random.choice([True, False]) else None
+                    location_id=loc.id,
+                    risk_score=risk_score,
+                    severity=level.lower(),
+                    alert_message=f"Automated {level} risk alert for {loc.name}. Please review conditions.",
+                    key_drivers="High Temperature, Low Humidity" if level in ["High", "Extreme"] else None,
+                    status="acknowledged" if random.choice([True, False]) else "active"
                 )
                 db.add(alert)
                 

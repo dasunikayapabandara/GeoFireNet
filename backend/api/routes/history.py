@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from backend.api.deps import get_db
 from backend import schemas, crud
+from backend.core.logger import logger
 
 router = APIRouter()
 
@@ -11,6 +12,6 @@ async def get_history(limit: int = 50, country: str = None, admin_region: str = 
     try:
         return crud.get_prediction_history(db, limit=limit, country=country, admin_region=admin_region)
     except Exception as e:
-        print(f"History API Error: {e}")
+        logger.error(f"History API Error: {e}", exc_info=True)
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail="Database lookup failed")
