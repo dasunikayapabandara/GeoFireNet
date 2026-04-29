@@ -1,0 +1,99 @@
+.realtime-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    width: 320px;
+    background: var(--bg-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    overflow: hidden;
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.toast-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.realtime-toast.extreme .toast-header {
+    color: #ff4d4d;
+    border-bottom: 2px solid #ff4d4d;
+}
+
+.realtime-toast.high .toast-header {
+    color: #ffa500;
+    border-bottom: 2px solid #ffa500;
+}
+
+.toast-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.toast-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.toast-body {
+    padding: 16px;
+}
+
+.toast-body p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--text-primary);
+}
+
+.toast-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.toast-progress {
+    height: 3px;
+    background: var(--accent-primary);
+    width: 100%;
+    transform-origin: left;
+    animation: progress 8s linear forwards;
+}
+
+.realtime-toast.extreme .toast-progress {
+    background: #ff4d4d;
+    animation-duration: 15s;
+}
+
+.realtime-toast.high .toast-progress {
+    background: #ffa500;
+    animation-duration: 8s;
+}
+
+@keyframes progress {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}

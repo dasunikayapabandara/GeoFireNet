@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from backend.core.logger import logger
+from backend.core.websocket import manager
+from fastapi import WebSocket, WebSocketDisconnect
 
 # Import routers from the new structure
 from backend.api.routes import (
@@ -82,6 +84,19 @@ app.include_router(alerts.router, prefix="/alerts", tags=["Alerts"])
 app.include_router(models.router, prefix="/models", tags=["Models Overview"])
 app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 app.include_router(health.router, prefix="/health", tags=["Health"])
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Keep connection alive; clients don't send data here yet
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket Error: {e}")
+        manager.disconnect(websocket)
 
 @app.get("/", tags=["Root"])
 async def root():

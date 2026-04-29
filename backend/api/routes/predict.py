@@ -12,7 +12,7 @@ from backend.core.logger import logger
 
 router = APIRouter()
 
-def _background_db_save(features: schemas.PredictionRequest, result: dict, current_mode_value: str):
+async def _background_db_save(features: schemas.PredictionRequest, result: dict, current_mode_value: str):
     """Executes database tracking outside of the HTTP event loop."""
     db: Session = SessionLocal()
     try:
@@ -37,13 +37,13 @@ def _background_db_save(features: schemas.PredictionRequest, result: dict, curre
             location_id=db_location.id if db_location else None
         ))
         
-        alert_record = evaluate_and_create_alert(
+        alert_record = await evaluate_and_create_alert(
             db=db, prediction_log_id=prediction_log.id, location_id=prediction_log.location_id,
             risk_score=result["risk_score"], risk_level=result["risk_level"],
             system_status=current_mode_value, primary_drivers=result["primary_drivers"]
         )
         if alert_record and getattr(alert_record, "id", None):
-            logger.info(f"Alert {alert_record.id} triggered in background.")
+            logger.info(f"Alert {alert_record.id} triggered and broadcasted in background.")
         logger.info(f"Successfully tracked prediction_id={prediction_log.id} in background.")
     except Exception as e:
         logger.error(f"Background I/O Error: {e}", exc_info=True)
