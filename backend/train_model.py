@@ -1,9 +1,5 @@
-import pandas as pd
-import numpy as np
 from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
-from sklearn.model_selection import cross_validate
+from sklearn.ensemble import RandomForestClassifier
 from backend import config
 from backend import data_loader, features, model_registry
 

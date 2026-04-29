@@ -1,7 +1,5 @@
-import json
 import numpy as np
 from sklearn.metrics import recall_score, precision_score, f1_score
-from backend import config
 from backend import data_loader, model_registry
 
 def calibrate():
@@ -29,7 +27,6 @@ def calibrate():
     for t in thresholds:
         y_pred = (y_proba >= t).astype(int)
         recall = recall_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred, zero_division=0)
         f1 = f1_score(y_test, y_pred, zero_division=0)
         
         # We want the highest threshold that still maintains our target recall

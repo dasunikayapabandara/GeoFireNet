@@ -1,7 +1,5 @@
 import pandas as pd
-import numpy as np
 from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -58,10 +56,7 @@ def create_preprocessing_pipeline():
     
     # 2. Imputation and Scaling (applied to all features including engineered ones)
     # We use a placeholder for columns to be determined dynamically after feature engineering
-    numeric_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='median')),
-        ('scaler', StandardScaler()) # Scaling helps LR models, RF is invariant but it doesn't hurt
-    ])
+
     
     # Full Preprocessing Pipeline
     # Notice how we apply it. Feature Eng creates new columns, then we scale/impute them all.

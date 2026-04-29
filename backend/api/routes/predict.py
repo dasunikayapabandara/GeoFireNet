@@ -3,13 +3,12 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import os
 
-from backend.api.deps import get_db, get_predictor
+from backend.api.deps import get_predictor
 from backend.database import SessionLocal
 from backend import schemas, crud
 from backend.services.prediction_service import RiskPredictor
 from backend.services.alert_service import evaluate_and_create_alert
 from backend.core.logger import logger
-from backend.config import settings
 
 router = APIRouter()
 
