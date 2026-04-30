@@ -1,15 +1,19 @@
 import os
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 BASE_DIR = Path(__file__).resolve().parent
 
 class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"
-    SIMULATE_OUTAGE: bool = False
-    WEATHER_API_KEY: str | None = os.getenv("WEATHER_API_KEY")
+    # Weather Ingestion Configuration
+    WEATHER_API_PROVIDER: str = "open-meteo" # Options: open-meteo, open-weather
+    WEATHER_API_KEY: Optional[str] = os.getenv("WEATHER_API_KEY")
+    WEATHER_REFRESH_INTERVAL: int = 3600  # seconds
+    DEFAULT_COUNTRY: str = "USA"
+    DEFAULT_REGION: str = "California"
 
     # Directories and File Paths
     ARTIFACTS_DIR: str = str(BASE_DIR / "artifacts")
@@ -71,7 +75,6 @@ settings = Settings()
 
 # Module-level aliases for backward compatibility
 ENVIRONMENT = settings.ENVIRONMENT
-SIMULATE_OUTAGE = settings.SIMULATE_OUTAGE
 WEATHER_API_KEY = settings.WEATHER_API_KEY
 ARTIFACTS_DIR = settings.ARTIFACTS_DIR
 MODEL_PATH = settings.MODEL_PATH

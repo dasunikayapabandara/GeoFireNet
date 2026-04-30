@@ -16,7 +16,8 @@ from backend.api.routes import (
     alerts,
     models,
     analytics,
-    health
+    health,
+    weather
 )
 from backend.database import SessionLocal
 from backend.api.deps import get_db, get_predictor
@@ -84,6 +85,7 @@ app.include_router(alerts.router, prefix="/alerts", tags=["Alerts"])
 app.include_router(models.router, prefix="/models", tags=["Models Overview"])
 app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 app.include_router(health.router, prefix="/health", tags=["Health"])
+app.include_router(weather.router, prefix="/weather", tags=["Weather Ingestion"])
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
