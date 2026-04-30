@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     # Directories and File Paths
     ARTIFACTS_DIR: str = str(BASE_DIR / "artifacts")
     MODEL_PATH: str = str(BASE_DIR / "artifacts" / "model.pkl")
-    THRESHOLDS_PATH: str = str(BASE_DIR / "artifacts" / "risk_thresholds.json")
+    THRESHOLDS_PATH: str = str(BASE_DIR / "artifacts" / "thresholds.json")
     EVAL_RESULTS_PATH: str = str(BASE_DIR / "artifacts" / "evaluation_results.json")
     CONFUSION_MATRIX_PATH: str = str(BASE_DIR / "artifacts" / "confusion_matrix.png")
     FEATURE_IMPORTANCE_PATH: str = str(BASE_DIR / "artifacts" / "feature_importance.png")

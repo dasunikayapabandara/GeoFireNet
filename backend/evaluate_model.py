@@ -35,6 +35,10 @@ def evaluate():
         "test_samples": len(X_test),
         "roc_auc": float(roc_auc),
         "pr_auc": float(pr_auc),
+        "accuracy": float(report['accuracy']),
+        "precision": float(report['1']['precision']),
+        "recall": float(report['1']['recall']),
+        "f1_score": float(report['1']['f1-score']),
         "classification_report": report
     }
     
@@ -44,8 +48,10 @@ def evaluate():
         
     print(f"ROC-AUC: {roc_auc:.3f}")
     print(f"PR-AUC: {pr_auc:.3f}")
-    print(f"F1 Score (Threshold=0.5): {report['1']['f1-score']:.3f}")
-    print(f"Recall (Threshold=0.5): {report['1']['recall']:.3f}")
+    print(f"Accuracy: {report['accuracy']:.3f}")
+    print(f"Precision (Class 1): {report['1']['precision']:.3f}")
+    print(f"Recall (Class 1): {report['1']['recall']:.3f}")
+    print(f"F1 Score (Class 1): {report['1']['f1-score']:.3f}")
     
     # 4. Generate & Save Confusion Matrix Plot
     cm = confusion_matrix(y_test, y_pred)

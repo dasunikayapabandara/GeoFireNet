@@ -2,6 +2,10 @@
     "test_samples": 600,
     "roc_auc": 0.9654089264794861,
     "pr_auc": 0.932436224973989,
+    "accuracy": 0.9,
+    "precision": 0.8412698412698413,
+    "recall": 0.8412698412698413,
+    "f1_score": 0.8412698412698413,
     "classification_report": {
         "0": {
             "precision": 0.927007299270073,
