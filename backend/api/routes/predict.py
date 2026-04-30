@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import os
 
-from backend.api.deps import get_predictor
+from backend.api.deps import get_predictor, get_db
 from backend.database import SessionLocal
 from backend import schemas, crud
 from backend.services.prediction_service import RiskPredictor
@@ -54,35 +54,20 @@ async def _background_db_save(features: schemas.PredictionRequest, result: dict,
 async def predict_risk(
     features: schemas.PredictionRequest, 
     background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
     predictor: RiskPredictor = Depends(get_predictor)
 ):
-    # Determine mode
     current_mode = schemas.SystemMode.PRODUCTION
-    if os.environ.get("SIMULATE_OUTAGE") == "1":
-        current_mode = schemas.SystemMode.DEGRADED
-
-    if current_mode == schemas.SystemMode.DEGRADED:
-        return schemas.PredictionResponse(
-            risk_score=0.0,
-            risk_probability=0.0,
-            risk_level="Unknown",
-            baseline_score=0.0,
-            baseline_level="Unknown",
-            explanation=["System Offline"],
-            system_status=current_mode,
-            alert_triggered=False,
-            timestamp=datetime.utcnow()
-        )
         
     try:
-        logger.info(f"Processing prediction request for mode={current_mode.value}, region={features.admin_region}, country={features.country}")
+        logger.info(f"Processing prediction request for region={features.admin_region}, country={features.country}")
+        
         # Ingestion Flow
         if features.temp is None or features.humidity is None or features.wind is None or features.veg_moisture is None:
             from backend.services.data_ingestion import fetch_realtime_weather
             logger.info("Missing environmental features. Fetching real-time weather data.")
             real_data = await fetch_realtime_weather(features.latitude, features.longitude)
             
-            # Use fetched data, fallback to user provided if only partially missing
             features.temp = features.temp if features.temp is not None else real_data["temp"]
             features.humidity = features.humidity if features.humidity is not None else real_data["humidity"]
             features.wind = features.wind if features.wind is not None else real_data["wind"]
@@ -95,25 +80,36 @@ async def predict_risk(
             wind=features.wind,
             veg_moisture=features.veg_moisture
         )
-        logger.info(f"Prediction completed: risk_score={result['risk_score']}, level={result['risk_level']}")
         
-        # Fast calculate if alert would trigger theoretically to notify UI immediately
-        alert_flag = result["risk_level"] in ["High", "Extreme"] and current_mode.value == "PRODUCTION"
+        # Get Model Version Name from DB
+        active_model = crud.get_active_model_version(db)
+        version_name = active_model.version_name if active_model else "Frozen Model v1.0"
+
+        # Notify UI immediately if high risk
+        alert_flag = result["risk_level"] in ["High", "Extreme"]
         
-        # Offload all database writes
-        background_tasks.add_task(_background_db_save, features, result, current_mode.value)
+        # Offload database writes
+        # Note: result["key_drivers"] was renamed from primary_drivers
+        background_result = {**result, "primary_drivers": result["key_drivers"]}
+        background_tasks.add_task(_background_db_save, features, background_result, current_mode.value)
         
         return schemas.PredictionResponse(
             risk_score=result["risk_score"],
             risk_probability=result["risk_probability"],
+            confidence=result["confidence"],
             risk_level=result["risk_level"],
             baseline_score=result["baseline_score"],
             baseline_level=result["baseline_level"],
-            explanation=result["primary_drivers"],
+            key_drivers=result["key_drivers"],
             system_status=current_mode,
             alert_triggered=alert_flag,
-            saved_prediction_id=None,
-            location_id=None,
+            location=schemas.PredictionLocation(
+                country=features.country,
+                admin_region=features.admin_region,
+                latitude=features.latitude,
+                longitude=features.longitude
+            ),
+            model_version=version_name,
             timestamp=datetime.utcnow()
         )
     except RuntimeError as e:
@@ -124,28 +120,4 @@ async def predict_risk(
         logger.error(f"Prediction API Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Prediction Error")
 
-@router.post("/reactive", response_model=schemas.ReactivePrediction)
-async def predict_reactive(file: UploadFile = File(...)):
-    """Reactive Prediction Endpoint: Simulates vision-based fire detection."""
-    try:
-        if not file.content_type.startswith("image/"):
-            raise HTTPException(status_code=400, detail="File must be an image.")
-        
-        filename = file.filename.lower()
-        is_fire = "fire" in filename or "smoke" in filename
-        
-        import random
-        confidence = random.uniform(0.7, 0.99)
-        
-        if is_fire:
-            message = "🔥 FIRE DETECTED: Emergency protocols recommended."
-        else:
-            message = "✅ NO FIRE: Environment appears clear."
-            
-        return {
-            "is_fire": is_fire,
-            "confidence": round(confidence, 4),
-            "message": message
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+

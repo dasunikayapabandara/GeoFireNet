@@ -54,10 +54,11 @@ class RiskPredictor:
         return {
             "risk_score": round(scaled_score, 2),
             "risk_probability": round(probability, 4),
+            "confidence": round(probability, 4),
             "risk_level": self.get_risk_level(probability),
             "baseline_score": round(baseline_score, 2),
             "baseline_level": baseline_level,
-            "primary_drivers": self._get_feature_contributions(input_data)
+            "key_drivers": self._get_feature_contributions(input_data)
         }
 
     def _calculate_heuristic_baseline(self, temp, humidity, wind, veg_moisture):

@@ -64,17 +64,25 @@ class PredictionRequest(BaseModel):
             return max(-180.0, min(v, 180.0))
         return v
 
+class PredictionLocation(BaseModel):
+    country: str
+    admin_region: str
+    latitude: float
+    longitude: float
+
 class PredictionResponse(BaseModel):
     risk_score: float
-    risk_probability: float
+    risk_probability: float  # For backward compatibility
+    confidence: float        # Alias for probability
     risk_level: str
     baseline_score: float
     baseline_level: str
-    explanation: List[str]
+    key_drivers: List[str]
     system_status: SystemMode
     alert_triggered: bool
     saved_prediction_id: Optional[int] = None
-    location_id: Optional[int] = None
+    location: PredictionLocation
+    model_version: str
     timestamp: datetime
 
 class ReactivePrediction(BaseModel):
