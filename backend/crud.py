@@ -45,7 +45,11 @@ def create_prediction_log(db: Session, log: schemas.RiskPredictionLogCreate):
     return db_log
 
 def get_prediction_history(db: Session, limit: int = 50, country: str = None, admin_region: str = None):
-    query = db.query(models.RiskPredictionLog)
+    query = db.query(models.RiskPredictionLog).options(
+        joinedload(models.RiskPredictionLog.location),
+        joinedload(models.RiskPredictionLog.weather_input),
+        joinedload(models.RiskPredictionLog.alert)
+    )
     
     if country or admin_region:
         query = query.join(models.Location, models.RiskPredictionLog.location_id == models.Location.id)

@@ -33,6 +33,7 @@ def test_prediction_to_alert_flow():
     latest_alert = alerts[0]
     
     assert latest_alert["severity"] == "extreme"
+    assert latest_alert["risk_level"] == "Extreme"
     
     # Fetch by ID
     alert_id = latest_alert["id"]

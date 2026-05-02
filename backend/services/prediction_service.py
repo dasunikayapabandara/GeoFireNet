@@ -16,11 +16,17 @@ class RiskPredictor:
 
     def get_risk_level(self, probability):
         """Map raw probability to a qualitative Risk Level based on calibrated thresholds."""
-        if probability <= self.thresholds.get("Low", 0.3):
+        if not self.thresholds:
+            logger.warning("No thresholds loaded, using hardcoded fallbacks.")
+            thresholds = {"Low": 0.3, "Moderate": 0.5, "High": 0.8}
+        else:
+            thresholds = self.thresholds
+
+        if probability <= thresholds.get("Low", 0.3):
             return "Low"
-        elif probability <= self.thresholds.get("Moderate", 0.5):
+        elif probability <= thresholds.get("Moderate", 0.5):
             return "Moderate"
-        elif probability <= self.thresholds.get("High", 0.8):
+        elif probability <= thresholds.get("High", 0.8):
             return "High"
         else:
             return "Extreme"

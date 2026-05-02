@@ -24,6 +24,7 @@ async def evaluate_and_create_alert(db: Session, prediction_log_id: int, locatio
         prediction_id=prediction_log_id,
         location_id=location_id,
         risk_score=risk_score,
+        risk_level=risk_level,
         severity=severity,
         alert_message=f"Automated risk detection flag: {severity.upper()}. Immediate review recommended.",
         key_drivers=driver_str

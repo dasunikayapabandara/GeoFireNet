@@ -87,6 +87,7 @@ class Alert(Base):
     
     # Denormalized parameters for ultra-fast frontend rendering
     risk_score = Column(Float, nullable=False)
+    risk_level = Column(String, nullable=False) # 'Low', 'Moderate', 'High', 'Extreme'
     severity = Column(String, nullable=False) # 'moderate', 'high', 'extreme'
     alert_message = Column(String, nullable=False)
     key_drivers = Column(String, nullable=True) # Summary explanation

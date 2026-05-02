@@ -140,6 +140,7 @@ class ModelVersion(ModelVersionBase):
 
 
 class AlertBase(BaseModel):
+    risk_level: str
     severity: str
     alert_message: str
     key_drivers: Optional[str] = None
