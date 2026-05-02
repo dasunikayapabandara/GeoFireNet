@@ -18,14 +18,14 @@ def test_predict_endpoint_success():
     
     # Check that new structured fields exist
     assert "risk_score" in data
-    assert "explanation" in data
+    assert "key_drivers" in data
     assert "alert_triggered" in data
     assert "saved_prediction_id" in data # Will be None temporarily due to async DB commits in background tasks
     assert "timestamp" in data
     assert "system_status" in data
     assert "baseline_level" in data
     
-    assert isinstance(data["explanation"], list)
+    assert isinstance(data["key_drivers"], list)
     
 def test_predict_endpoint_lat_lon_clamping():
     response = client.post("/predict", json={

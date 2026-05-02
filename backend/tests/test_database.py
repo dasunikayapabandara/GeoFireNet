@@ -45,7 +45,7 @@ def test_prediction_creates_alert_relation(db_session):
     db_session.add(pred)
     db_session.commit()
     
-    alert = Alert(prediction_id=pred.id, severity="Extreme", alert_message="Test Alert", risk_score=95.0)
+    alert = Alert(prediction_id=pred.id, severity="extreme", risk_level="Extreme", alert_message="Test Alert", risk_score=95.0)
     db_session.add(alert)
     db_session.commit()
     
