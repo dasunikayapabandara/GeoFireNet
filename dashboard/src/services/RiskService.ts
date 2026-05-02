@@ -23,6 +23,12 @@ export interface Alert {
     drivers: string[];
     region: string;
     country: string;
+    weather?: {
+        temp: number;
+        humidity: number;
+        wind: number;
+        veg: number;
+    };
 }
 
 export interface RiskChartData {
@@ -37,278 +43,126 @@ export interface RiskChartData {
     }[];
 }
 
-
-export let currentSystemStatus: string = 'UNKNOWN';
-
-const mockChartData: RiskChartData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [
-        {
-            label: 'Fire Risk Index',
-            data: [35, 42, 38, 55, 68, 72, 65],
-            fill: true,
-            backgroundColor: 'rgba(239, 68, 68, 0.2)',
-            borderColor: '#ef4444',
-        },
-        {
-            label: 'Historical Avg',
-            data: [30, 32, 35, 38, 40, 42, 41],
-            fill: false,
-            borderColor: '#3b82f6',
-            borderDash: [5, 5],
-        }
-    ],
-};
-
-const getConditionsForCountry = (country?: string) => {
-    switch (country) {
-        case 'USA': return { temp: 32, humidity: 20, wind: 30, veg_moisture: 0.25 };
-        case 'Australia': return { temp: 42, humidity: 12, wind: 45, veg_moisture: 0.15 };
-        case 'Greece': return { temp: 38, humidity: 18, wind: 35, veg_moisture: 0.2 };
-        case 'Portugal': return { temp: 36, humidity: 25, wind: 25, veg_moisture: 0.3 };
-        case 'Canada': return { temp: 25, humidity: 40, wind: 20, veg_moisture: 0.6 };
-        case 'Brazil': return { temp: 30, humidity: 60, wind: 15, veg_moisture: 0.7 };
-        default: return { temp: 35, humidity: 15, wind: 25, veg_moisture: 0.2 }; // Global Avg / Fallback
-    }
-};
-
-const calculateFallbackRisk = (temp: number, humidity: number, wind: number, veg: number): number => {
-    const n_temp = Math.min(temp / 50.0, 1);
-    const n_hum = Math.min(humidity / 100.0, 1);
-    const n_wind = Math.min(wind / 100.0, 1);
-    const n_veg = Math.min(veg, 1);
-    const score = (40 * n_temp) + (20 * n_wind) - (30 * n_hum) - (30 * n_veg) + 40;
-    return Math.max(0, Math.min(score, 100));
-};
-
-const getRiskStatus = (score: number): 'low' | 'moderate' | 'high' | 'extreme' => {
-    if (score < 30) return 'low';
-    if (score < 50) return 'moderate';
-    if (score < 80) return 'high';
-    return 'extreme';
-};
-
-// --- MOCK GLOBAL DATA GENERATOR ---
-const MOCK_GLOBAL_LOCATIONS = [
-    { name: 'Napa Valley Sector A', country: 'USA', admin_region: 'California' },
-    { name: 'Sonoma County Zone 3', country: 'USA', admin_region: 'California' },
-    { name: 'Sydney Outskirts', country: 'Australia', admin_region: 'New South Wales' },
-    { name: 'Blue Mountains', country: 'Australia', admin_region: 'New South Wales' },
-    { name: 'Athens Suburbs', country: 'Greece', admin_region: 'Attica' },
-    { name: 'Faro District', country: 'Portugal', admin_region: 'Algarve' },
-    { name: 'Alberta Forests', country: 'Canada', admin_region: 'Alberta' },
-    { name: 'Amazon Basin Sector 1', country: 'Brazil', admin_region: 'Amazonas' }
-];
-
-const mockHistoryData = MOCK_GLOBAL_LOCATIONS.slice(0, 5).map((loc, i) => ({
-    id: i + 1,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * i * 3).toISOString(),
-    location: loc,
-    risk_level: ['Low', 'Moderate', 'High', 'Extreme'][i % 4],
-    risk_probability: 0.1 + (i * 0.15),
-    primary_drivers: 'Dry Vegetation, High Wind'
-}));
-
-const mockActiveDetections: any[] = [];
-let nextId = 100;
-
-setInterval(() => {
-    const randomLocation = MOCK_GLOBAL_LOCATIONS[Math.floor(Math.random() * MOCK_GLOBAL_LOCATIONS.length)];
-    const risks = ['Low', 'Moderate', 'High', 'Extreme'];
-    const randomRisk = risks[Math.floor(Math.random() * risks.length)];
-
-    // Simulate Risk Prediction
-    mockHistoryData.unshift({
-        id: nextId++,
-        timestamp: new Date().toISOString(),
-        location: randomLocation,
-        risk_level: randomRisk,
-        risk_probability: Math.random(),
-        primary_drivers: 'Global Simulation Generator'
-    });
-    if (mockHistoryData.length > 50) mockHistoryData.pop();
-
-    // Randomly Simulate Active Detections (1/5 chance)
-    if (Math.random() > 0.8) {
-        mockActiveDetections.unshift({
-            id: nextId + 1000,
-            timestamp: new Date().toISOString(),
-            location: randomLocation,
-            detection_source: ['MODIS Satellite', 'VIIRS Sensor', 'Local Ground Hub'][Math.floor(Math.random() * 3)],
-            confidence_score: 0.8 + Math.random() * 0.19,
-            fire_radiative_power_mw: Math.random() * 500,
-            containment_status: 'Active'
-        });
-        if (mockActiveDetections.length > 50) mockActiveDetections.pop();
-    }
-}, 5000);
+const API_BASE = 'http://localhost:8000';
 
 export const RiskService = {
     getMetrics: async (query?: LocationQuery): Promise<RiskMetric[]> => {
-        const cond = getConditionsForCountry(query?.country);
-        const mlScore = calculateFallbackRisk(cond.temp, cond.humidity, cond.wind, cond.veg_moisture);
-        currentSystemStatus = 'DEGRADED (Client Fallback)';
-        return [
-            {
-                title: query?.country ? `${query.country} Avg Risk` : "Global Avg Risk",
-                value: `${Math.round(mlScore)}/100`,
-                change: "Stable",
-                trend: "neutral",
-                status: getRiskStatus(mlScore)
-            },
-            {
-                title: query?.country ? `Active Hotspots in ${query.country}` : "Active Hotspots Globally",
-                value: mockActiveDetections.length.toString(),
-                trend: "up",
-                status: mockActiveDetections.length > 5 ? "high" : "low"
-            }
-        ];
+        try {
+            const summary = await RiskService.getGlobalSummary(query);
+            const alertsSummary = await RiskService.getAlertsSummary();
+            
+            // Calculate an aggregate risk value from global summary if possible
+            const totalPredictions = summary.predictions_summary.reduce((acc: number, curr: any) => acc + curr.count, 0);
+            const highExtreme = summary.predictions_summary
+                .filter((r: any) => r.level === 'High' || r.level === 'Extreme')
+                .reduce((acc: number, curr: any) => acc + curr.count, 0);
+            
+            const riskValue = totalPredictions > 0 ? Math.round((highExtreme / totalPredictions) * 100) : 0;
+
+            return [
+                {
+                    title: query?.country ? `${query.country} Risk Index` : "Global Risk Index",
+                    value: `${riskValue}/100`,
+                    change: "Live API",
+                    trend: "neutral",
+                    status: riskValue > 80 ? 'extreme' : riskValue > 50 ? 'high' : riskValue > 30 ? 'moderate' : 'low'
+                },
+                {
+                    title: "Active Alerts",
+                    value: alertsSummary.active_total.toString(),
+                    trend: "neutral",
+                    status: alertsSummary.active_total > 5 ? "high" : "low"
+                }
+            ];
+        } catch (e) {
+            console.error("Failed to fetch metrics", e);
+            throw e;
+        }
     },
 
     getAlerts: async (query?: LocationQuery): Promise<Alert[]> => {
-        try {
-            let url = 'http://localhost:8000/alerts?limit=50';
-            if (query?.country) url += `&country=${query.country}`;
+        let url = `${API_BASE}/alerts?limit=50`;
+        if (query?.country) url += `&country=${query.country}`;
 
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('API Error');
-            const data = await response.json();
-            return data.map((alert: any) => ({
-                id: alert.id.toString(),
-                title: `${alert.severity.toUpperCase()} Risk Alert`,
-                description: alert.alert_message,
-                timestamp: alert.triggered_at,
-                severity: alert.severity.toLowerCase(),
-                status: alert.status,
-                score: alert.risk_score,
-                drivers: alert.key_drivers ? alert.key_drivers.split(',') : [],
-                region: alert.location?.admin_region || 'Unknown',
-                country: alert.location?.country || 'Unknown',
-                weather: {
-                    temp: Math.floor(Math.random() * 20) + 25,
-                    humidity: Math.floor(Math.random() * 30) + 10,
-                    wind: Math.floor(Math.random() * 50) + 15,
-                    veg: Math.random() * 0.3 + 0.1
-                }
-            }));
-        } catch (e) {
-            console.error(e);
-            return [];
-        }
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch alerts');
+        const data = await response.json();
+        
+        return data.map((alert: any) => ({
+            id: alert.id.toString(),
+            title: `${alert.severity.toUpperCase()} Risk Alert`,
+            description: alert.alert_message,
+            timestamp: alert.triggered_at,
+            severity: alert.severity.toLowerCase(),
+            status: alert.status,
+            score: alert.risk_score,
+            drivers: alert.key_drivers ? alert.key_drivers.split(',') : [],
+            region: alert.location?.admin_region || 'Unknown',
+            country: alert.location?.country || 'Unknown',
+            weather: alert.weather_input ? {
+                temp: alert.weather_input.temp,
+                humidity: alert.weather_input.humidity,
+                wind: alert.weather_input.wind,
+                veg: alert.weather_input.veg_moisture
+            } : undefined
+        }));
     },
 
     resolveAlert: async (alertId: string): Promise<boolean> => {
-        try {
-            const response = await fetch(`http://localhost:8000/alerts/${alertId}/resolve`, {
-                method: 'PATCH'
-            });
-            return response.ok;
-        } catch (e) {
-            console.error(e);
-            return false;
-        }
+        const response = await fetch(`${API_BASE}/alerts/${alertId}/resolve`, {
+            method: 'PATCH'
+        });
+        return response.ok;
     },
 
     getAlertsSummary: async (): Promise<any> => {
-        try {
-            const response = await fetch(`http://localhost:8000/alerts/summary`);
-            if (!response.ok) throw new Error('API Error');
-            return await response.json();
-        } catch (e) {
-            return {
-                active_total: 0,
-                active_high: 0,
-                active_extreme: 0,
-                generated_today: 0
-            };
-        }
+        const response = await fetch(`${API_BASE}/alerts/summary`);
+        if (!response.ok) throw new Error('Failed to fetch alerts summary');
+        return await response.json();
     },
 
-    getRiskTrend: async (query?: LocationQuery): Promise<RiskChartData> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const cond = getConditionsForCountry(query?.country);
-                const baseScore = calculateFallbackRisk(cond.temp, cond.humidity, cond.wind, cond.veg_moisture);
-                
-                // Deep copy the mock data
-                const dynamicChartData = JSON.parse(JSON.stringify(mockChartData)) as RiskChartData;
-                
-                // Adjust data points using the region's baseScore as an anchor
-                dynamicChartData.datasets[0].data = dynamicChartData.datasets[0].data.map((val) => {
-                    const offset = baseScore - 50; 
-                    return Math.max(0, Math.min(100, Math.round(val + offset + (Math.random() * 5 - 2.5))));
-                });
-                
-                dynamicChartData.datasets[1].data = dynamicChartData.datasets[1].data.map((val) => {
-                    const offset = baseScore - 50;
-                    return Math.max(0, Math.min(100, Math.round(val + offset)));
-                });
-
-                resolve(dynamicChartData);
-            }, 800);
-        });
+    getRiskTrend: async (_query?: LocationQuery): Promise<RiskChartData> => {
+        // Pending backend implementation for trend data
+        // For now, we return an empty structure or throw to trigger error state
+        return {
+            labels: [],
+            datasets: []
+        };
     },
 
     getGlobalSummary: async (query?: LocationQuery): Promise<any> => {
-        let url = 'http://localhost:8000/analytics/global_summary';
+        let url = `${API_BASE}/analytics/global_summary`;
         const params = new URLSearchParams();
         if (query?.country) params.append('country', query.country);
         if (query?.admin_region) params.append('admin_region', query.admin_region);
         if (params.toString()) url += `?${params.toString()}`;
 
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('API Error');
-            return await response.json();
-        } catch (e) {
-            // Mock Fallback
-            return {
-                predictions_summary: [
-                    { level: 'Extreme', count: mockHistoryData.filter(d => d.risk_level === 'Extreme').length },
-                    { level: 'High', count: mockHistoryData.filter(d => d.risk_level === 'High').length }
-                ],
-                active_detections_summary: [
-                    { status: 'Active', count: mockActiveDetections.length }
-                ]
-            };
-        }
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch global summary');
+        return await response.json();
     },
 
     getHistory: async (query?: LocationQuery): Promise<any[]> => {
-        let url = 'http://localhost:8000/history?limit=50';
+        let url = `${API_BASE}/history?limit=50`;
         const params = new URLSearchParams();
         if (query?.country) params.append('country', query.country);
         if (query?.admin_region) params.append('admin_region', query.admin_region);
         if (params.toString()) url += `&${params.toString()}`;
 
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('API Error');
-            return await response.json();
-        } catch (e) {
-            return mockHistoryData.filter(d =>
-                (!query?.country || d.location.country === query.country) &&
-                (!query?.admin_region || d.location.admin_region === query.admin_region)
-            );
-        }
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch history');
+        return await response.json();
     },
 
     getActiveDetections: async (query?: LocationQuery): Promise<any[]> => {
-        let url = 'http://localhost:8000/detections?limit=100';
+        let url = `${API_BASE}/detections?limit=100`;
         const params = new URLSearchParams();
         if (query?.country) params.append('country', query.country);
         if (query?.admin_region) params.append('admin_region', query.admin_region);
         if (params.toString()) url += `&${params.toString()}`;
 
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('API Error');
-            return await response.json();
-        } catch (e) {
-            return mockActiveDetections.filter(d =>
-                (!query?.country || d.location.country === query.country) &&
-                (!query?.admin_region || d.location.admin_region === query.admin_region)
-            );
-        }
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch detections');
+        return await response.json();
     }
 };

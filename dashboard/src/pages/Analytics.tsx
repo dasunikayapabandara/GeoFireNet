@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Flame, TrendingUp, AlertOctagon, Activity,
-    Map, Filter, Lightbulb, ThermometerSun, Wind, AlertTriangle, ArrowUpRight, ArrowDownRight
+    Map, Filter, ThermometerSun, Wind, AlertTriangle, ArrowUpRight
 } from 'lucide-react';
 import {
     Chart as ChartJS,
@@ -16,7 +16,8 @@ import {
     ArcElement,
     Filler
 } from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
+import { RiskService } from '../services/RiskService';
 import '../styles/Analytics.css';
 
 ChartJS.register(
@@ -32,7 +33,6 @@ ChartJS.register(
     Filler
 );
 
-// Theme Colors
 const colors = {
     extreme: '#ef4444',
     high: '#f97316',
@@ -57,86 +57,84 @@ const chartOptions = {
 };
 
 const Analytics: React.FC = () => {
-    // Filters State
     const [timeRange, setTimeRange] = useState('7d');
     const [region, setRegion] = useState('');
-    const [isDetectionMode, setIsDetectionMode] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [summary, setSummary] = useState<any>(null);
+    const [alertsSummary, setAlertsSummary] = useState<any>(null);
 
-    // Recalculate Data based on UI Filters
-    const { trendData, distData, regionData, driversData, kpis } = React.useMemo(() => {
-        let mult = 1;
-        if (timeRange === '24h') mult *= 0.5;
-        if (timeRange === '30d') mult *= 2.5;
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const [summaryData, alertsSum] = await Promise.all([
+                RiskService.getGlobalSummary({ country: region || undefined }),
+                RiskService.getAlertsSummary()
+            ]);
+            setSummary(summaryData);
+            setAlertsSummary(alertsSum);
+        } catch (err) {
+            setError("Failed to fetch analytics from backend.");
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        // Regional multipliers
-        if (region === 'USA') mult *= 1.2;
-        if (region === 'Australia') mult *= 1.5;
-        if (region === 'Greece') mult *= 0.8;
-        
-        if (isDetectionMode) mult *= 0.7; // Active mode has fewer counts than predictive globally
+    useEffect(() => {
+        fetchData();
+    }, [region, timeRange]);
+
+    const distData = useMemo(() => {
+        if (!summary) return null;
+        const levels = ['Low', 'Moderate', 'High', 'Extreme'];
+        const data = levels.map(level => {
+            const found = summary.predictions_summary.find((r: any) => r.level === level);
+            return found ? found.count : 0;
+        });
 
         return {
-            trendData: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [
-                    {
-                        label: 'Avg Risk Score',
-                        data: [42, 45, 55, 68, 74, 82, 78].map(v => Math.min(100, Math.round(v * (mult > 1.5 ? 1.2 : mult < 0.5 ? 0.8 : 1)))), // Flatten extreme spikes for 0-100 logic
-                        borderColor: colors.primary,
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                        fill: true,
-                        tension: 0.4
-                    }
-                ]
-            },
-            distData: {
-                labels: ['Low', 'Moderate', 'High', 'Extreme'],
-                datasets: [{
-                    data: [45, 30, 15, 10].map(v => Math.round(v * mult)),
-                    backgroundColor: [colors.low, colors.moderate, colors.high, colors.extreme],
-                    borderWidth: 0
-                }]
-            },
-            regionData: {
-                labels: ['Napa Valley', 'Sonoma', 'Mendocino', 'Lake County', 'Santa Cruz', 'Marin'],
-                datasets: [{
-                    label: 'Extreme Risk Count',
-                    data: [24, 18, 12, 8, 15, 5].map(v => Math.round(v * mult)),
-                    backgroundColor: colors.extreme,
-                    borderRadius: 4
-                }]
-            },
-            driversData: {
-                labels: ['Dry Vegetation', 'High Wind', 'Low Humidity', 'High Temp'],
-                datasets: [{
-                    label: 'Driver Influence %',
-                    data: [45, 30, 15, 10].map(v => Math.round(v * mult)),
-                    backgroundColor: colors.primary,
-                    borderRadius: 4
-                }]
-            },
-            kpis: {
-                predictions: Math.round(14230 * mult).toLocaleString(),
-                avgRisk: Math.min(100, Math.round(68 * (mult > 1.5 ? 1.2 : mult < 0.5 ? 0.8 : 1))),
-                extremeCount: Math.round(1402 * mult).toLocaleString(),
-                activeAlerts: Math.round(24 * mult)
-            }
+            labels: levels,
+            datasets: [{
+                data: data,
+                backgroundColor: [colors.low, colors.moderate, colors.high, colors.extreme],
+                borderWidth: 0
+            }]
         };
-    }, [timeRange, region, isDetectionMode]);
+    }, [summary]);
 
-    const recentAlerts = [
-        { id: 1, title: 'Extreme Fire Weather', region: region || 'Global Parameter', time: '10 mins ago', level: 'extreme' },
-        { id: 2, title: 'Elevated High Winds', region: 'Sector B', time: '1 hour ago', level: 'high' },
-        { id: 3, title: 'Dry Vegetation Threshold', region: 'Zone Alpha', time: '3 hours ago', level: 'moderate' },
-    ];
+    const kpis = useMemo(() => {
+        if (!summary || !alertsSummary) return { predictions: '0', avgRisk: '0', extremeCount: '0', activeAlerts: '0' };
+        
+        const totalPredictions = summary.predictions_summary.reduce((acc: number, curr: any) => acc + curr.count, 0);
+        const extremeCount = summary.predictions_summary
+            .filter((r: any) => r.level === 'Extreme')
+            .reduce((acc: number, curr: any) => acc + curr.count, 0);
+        
+        const highExtreme = summary.predictions_summary
+            .filter((r: any) => r.level === 'High' || r.level === 'Extreme')
+            .reduce((acc: number, curr: any) => acc + curr.count, 0);
+        
+        const avgRisk = totalPredictions > 0 ? Math.round((highExtreme / totalPredictions) * 100) : 0;
+
+        return {
+            predictions: totalPredictions.toLocaleString(),
+            avgRisk: avgRisk.toString(),
+            extremeCount: extremeCount.toLocaleString(),
+            activeAlerts: alertsSummary.active_total.toString()
+        };
+    }, [summary, alertsSummary]);
+
+    if (loading) return <div className="analytics-container flex-center"><h3>Loading Neural Intelligence...</h3></div>;
+    if (error) return <div className="analytics-container flex-center"><div className="settings-alert error">{error}</div></div>;
 
     return (
         <div className="analytics-container">
-            {/* Header & Filters */}
             <div className="analytics-header">
                 <div className="analytics-title">
                     <h1><Activity size={32} color="var(--accent-primary)" /> Risk Analytics</h1>
-                    <p>Comprehensive breakdown of predictive models and regional intelligence.</p>
+                    <p>Live backend-driven intelligence for predictive and active fire risk monitoring.</p>
                 </div>
 
                 <div className="filters-bar">
@@ -152,141 +150,78 @@ const Analytics: React.FC = () => {
                         <Map size={18} color="var(--text-secondary)" />
                         <select title="Region Filter" value={region} onChange={(e) => setRegion(e.target.value)}>
                             <option value="">Global Coverage</option>
-                            <option value="USA">North America (USA)</option>
-                            <option value="Australia">Oceania (Australia)</option>
-                            <option value="Greece">Europe (Greece)</option>
+                            <option value="USA">USA</option>
+                            <option value="Australia">Australia</option>
+                            <option value="Greece">Greece</option>
                         </select>
                     </div>
-                    <div className="filter-group" style={{ marginLeft: 'auto' }}>
-                        <button
-                            onClick={() => setIsDetectionMode(!isDetectionMode)}
-                            style={{
-                                background: isDetectionMode ? 'var(--accent-risk-extreme)' : 'var(--bg-tertiary)',
-                                padding: '0.5rem 1rem', borderRadius: '0.375rem',
-                                border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', color: 'white'
-                            }}
-                        >
-                            Mode: {isDetectionMode ? 'Live Active Detections' : 'Predictive Risk Algorithms'}
-                        </button>
-                    </div>
                 </div>
             </div>
 
-            {/* Insights Panel */}
-            <div className="insight-panel">
-                <h3><Lightbulb size={20} /> AI Generated Insights</h3>
-                <ul className="insight-list">
-                    <li className="insight-item">
-                        <TrendingUp size={18} color="var(--accent-risk-extreme)" />
-                        <span>Average risk score trending based on current time window and regional filters.</span>
-                    </li>
-                    <li className="insight-item">
-                        <Map size={18} color="var(--accent-primary)" />
-                        <span><strong>{region || 'Global regions'}</strong> showing variable distribution in Extreme Risk predictions.</span>
-                    </li>
-                    <li className="insight-item">
-                        <Wind size={18} color="var(--accent-risk-med)" />
-                        <span><strong>Dry Vegetation</strong> and <strong>High Winds</strong> are the leading synergistic drivers forcing alerts.</span>
-                    </li>
-                </ul>
-            </div>
-
-            {/* KPIs */}
             <div className="kpi-grid">
                 <div className="kpi-card">
-                    <div className="kpi-header">
-                        <span>Total Predictions</span>
-                        <Activity size={18} />
-                    </div>
+                    <div className="kpi-header"><span>Total Predictions</span><Activity size={18} /></div>
                     <div className="kpi-value">{kpis.predictions}</div>
-                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> Tracking</div>
+                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> Total DB Logs</div>
                 </div>
                 <div className="kpi-card">
-                    <div className="kpi-header">
-                        <span>Avg Risk Score</span>
-                        <Activity size={18} />
-                    </div>
-                    <div className="kpi-value">{kpis.avgRisk}/100</div>
-                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> Regional Baseline</div>
+                    <div className="kpi-header"><span>High/Extreme Ratio</span><Activity size={18} /></div>
+                    <div className="kpi-value">{kpis.avgRisk}%</div>
+                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> Critical Mass</div>
                 </div>
                 <div className="kpi-card">
-                    <div className="kpi-header">
-                        <span>High/Extreme Count</span>
-                        <Flame size={18} color="var(--accent-risk-extreme)" />
-                    </div>
+                    <div className="kpi-header"><span>Extreme Count</span><Flame size={18} color="var(--accent-risk-extreme)" /></div>
                     <div className="kpi-value">{kpis.extremeCount}</div>
-                    <div className="kpi-trend trend-down"><ArrowDownRight size={14} /> Dynamic</div>
                 </div>
                 <div className="kpi-card">
-                    <div className="kpi-header">
-                        <span>Active Alerts</span>
-                        <AlertOctagon size={18} color="var(--accent-risk-high)" />
-                    </div>
+                    <div className="kpi-header"><span>Active Alerts</span><AlertOctagon size={18} color="var(--accent-risk-high)" /></div>
                     <div className="kpi-value">{kpis.activeAlerts}</div>
-                    <div className="kpi-trend trend-up"><ArrowUpRight size={14} /> Tracking</div>
                 </div>
             </div>
 
-            {/* Charts Row 1 */}
             <div className="charts-grid-2">
                 <div className="chart-card">
                     <div className="chart-header">
                         <TrendingUp size={20} color="var(--accent-primary)" /> Risk Trend Over Time
                     </div>
-                    <div className="chart-container">
-                        <Line data={trendData} options={chartOptions} />
+                    <div className="pending-overlay">
+                        <TrendingUp size={48} className="pending-icon" />
+                        <p>Temporal Aggregation Pending Backend Integration</p>
                     </div>
                 </div>
                 <div className="chart-card">
                     <div className="chart-header">
-                        <Activity size={20} color="var(--accent-risk-med)" /> Risk Distribution
+                        <Activity size={20} color="var(--accent-risk-med)" /> Risk Distribution (Live)
                     </div>
                     <div className="chart-container">
-                        <Doughnut data={distData} options={{ ...chartOptions, scales: undefined }} />
+                        {distData && <Doughnut data={distData} options={{ ...chartOptions, scales: undefined }} />}
                     </div>
                 </div>
             </div>
 
-            {/* Charts Row 2 */}
             <div className="charts-grid-3">
                 <div className="chart-card">
-                    <div className="chart-header">
-                        <Map size={20} color="var(--accent-primary)" /> Region-Wise Extreme Risk
-                    </div>
-                    <div className="chart-container">
-                        <Bar data={regionData} options={{ ...chartOptions, indexAxis: 'y' }} />
+                    <div className="chart-header"><Map size={20} color="var(--accent-primary)" /> Regional Distribution</div>
+                    <div className="pending-overlay">
+                        <Map size={32} className="pending-icon" />
+                        <p>Spatial Grouping Pending</p>
                     </div>
                 </div>
-
                 <div className="chart-card">
-                    <div className="chart-header">
-                        <ThermometerSun size={20} color="var(--accent-risk-high)" /> Top Risk Drivers
-                    </div>
-                    <div className="chart-container">
-                        <Bar data={driversData} options={chartOptions} />
+                    <div className="chart-header"><ThermometerSun size={20} color="var(--accent-risk-high)" /> Top Risk Drivers</div>
+                    <div className="pending-overlay">
+                        <Wind size={32} className="pending-icon" />
+                        <p>Driver Correlation API Pending</p>
                     </div>
                 </div>
-
-                <div className="chart-card" style={{ overflowY: 'auto' }}>
-                    <div className="chart-header">
-                        <AlertTriangle size={20} color="var(--accent-risk-extreme)" /> Recent Alerts
-                    </div>
-                    <div style={{ marginTop: '0.5rem' }}>
-                        {recentAlerts.map(alert => (
-                            <div key={alert.id} className={`alert-item alert-${alert.level}`}>
-                                <div className="alert-info">
-                                    <h4 style={{ color: `var(--accent-risk-${alert.level === 'extreme' ? 'extreme' : alert.level === 'high' ? 'high' : 'med'})` }}>
-                                        {alert.title}
-                                    </h4>
-                                    <p>{alert.region}</p>
-                                </div>
-                                <div className="alert-time">{alert.time}</div>
-                            </div>
-                        ))}
+                <div className="chart-card">
+                    <div className="chart-header"><AlertTriangle size={20} color="var(--accent-risk-extreme)" /> Recent Alerts Feed</div>
+                    <div className="pending-overlay">
+                        <AlertTriangle size={32} className="pending-icon" />
+                        <p>Stream Integration Pending</p>
                     </div>
                 </div>
             </div>
-
         </div>
     );
 };

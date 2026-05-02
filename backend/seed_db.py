@@ -93,6 +93,7 @@ def seed_database():
                     prediction_id=pred.id,
                     location_id=loc.id,
                     risk_score=risk_score,
+                    risk_level=level,
                     severity=level.lower(),
                     alert_message=f"Automated {level} risk alert for {loc.name}. Please review conditions.",
                     key_drivers="High Temperature, Low Humidity" if level in ["High", "Extreme"] else None,
