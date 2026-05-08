@@ -23,7 +23,14 @@ const DashboardOverview: React.FC = () => {
     const fetchData = async () => {
         setLoading(true);
         setError(null);
+        
         try {
+            // Check health first when retrying or fetching data
+            const status = await checkBackendStatus();
+            if (status.health.includes('Unable to reach') || status.health.includes('failed') || status.health === 'unreachable') {
+                throw new Error("Backend unreachable");
+            }
+            
             const query = countryFilter ? { country: countryFilter } : undefined;
             const [metricsData, alertsData, trendData] = await Promise.all([
                 RiskService.getMetrics(query),
