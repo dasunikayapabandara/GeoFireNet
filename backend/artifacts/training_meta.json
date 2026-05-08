@@ -12,7 +12,9 @@
         "classifier__n_estimators": 200
     },
     "metrics": {
-        "ROC_AUC": 0.972886011663384
+        "ROC_AUC": 0.972886011663384,
+        "10_fold_cv_mean": 0.9729781479752597,
+        "10_fold_cv_std": 0.007516304648815511
     },
     "seed": 42
 }

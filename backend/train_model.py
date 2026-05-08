@@ -1,6 +1,7 @@
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_score
+import numpy as np
 from backend import config
 from backend import data_loader, features, model_registry
 
@@ -47,16 +48,34 @@ def train_and_compare():
     print(f"Best Parameters: {best_params}")
     print(f"Best Cross-Validation ROC_AUC: {best_score:.3f}")
     
-    # 4. Save Artifacts
+    # 4. Cross-Validation (10-fold)
+    print("\nRunning 10-Fold Cross-Validation on best model...")
+    cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=config.RANDOM_SEED)
+    cv_scores = cross_val_score(best_pipeline, X_train, y_train, cv=cv, scoring='roc_auc', n_jobs=-1)
+    
+    cv_mean = float(np.mean(cv_scores))
+    cv_std = float(np.std(cv_scores))
+    
+    print(f"10-Fold CV ROC_AUC Mean: {cv_mean:.3f} (+/- {cv_std:.3f})")
+    
+    cv_results = {
+        "fold_scores": cv_scores.tolist(),
+        "mean_score": cv_mean,
+        "std_dev": cv_std
+    }
+    
+    # 5. Save Artifacts
     model_registry.save_model(best_pipeline)
     
-    # 5. Save Metadata
+    # 6. Save Metadata & CV Results
     meta = {
         "selected_model": "RandomForestClassifier",
         "features": config.RAW_FEATURES,
         "training_parameters": best_params,
         "metrics": {
-            "ROC_AUC": best_score
+            "ROC_AUC": best_score,
+            "10_fold_cv_mean": cv_mean,
+            "10_fold_cv_std": cv_std
         },
         "seed": config.RANDOM_SEED
     }
@@ -66,6 +85,9 @@ def train_and_compare():
     os.makedirs(config.ARTIFACTS_DIR, exist_ok=True)
     with open(os.path.join(config.ARTIFACTS_DIR, "training_meta.json"), "w") as f:
         json.dump(meta, f, indent=4)
+        
+    with open(os.path.join(config.ARTIFACTS_DIR, "cross_validation_results.json"), "w") as f:
+        json.dump(cv_results, f, indent=4)
         
     print("Training Complete. Proceed to Evaluate and Calibrate.")
 
