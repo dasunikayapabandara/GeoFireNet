@@ -1,3 +1,5 @@
+import { fetchJson } from '../config/api';
+
 export interface RiskZoneFeature {
     type: 'Feature';
     properties: {
@@ -20,9 +22,7 @@ export interface RiskGeoJSON {
 
 export const MapService = {
     getRiskZones: async (): Promise<RiskGeoJSON> => {
-        const response = await fetch('http://localhost:8000/history?limit=50');
-        if (!response.ok) throw new Error('Failed to fetch prediction history for map zones');
-        const history = await response.json();
+        const history = await fetchJson<any[]>('/history?limit=50');
         const features = history
             .filter((item: any) => item.location?.latitude != null && item.location?.longitude != null)
             .map((item: any): RiskZoneFeature => {

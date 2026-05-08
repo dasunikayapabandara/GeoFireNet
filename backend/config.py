@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     WEATHER_REFRESH_INTERVAL: int = 3600  # seconds
     DEFAULT_COUNTRY: str = "USA"
     DEFAULT_REGION: str = "California"
+    CORS_ALLOW_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     # Directories and File Paths
     ARTIFACTS_DIR: str = str(BASE_DIR / "artifacts")

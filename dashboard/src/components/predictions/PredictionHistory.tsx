@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { HistoryItem } from '../../types/prediction';
+import { fetchJson } from '../../config/api';
 
 const PredictionHistory: React.FC = () => {
     const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -8,8 +9,7 @@ const PredictionHistory: React.FC = () => {
 
     const loadHistory = async () => {
         try {
-            const resp = await fetch('http://localhost:8000/history?limit=5');
-            const data = await resp.json();
+            const data = await fetchJson<HistoryItem[]>('/history?limit=5');
             setHistory(data);
         } catch (e) {
             console.error("Failed fetching history for Predictions Page", e);
@@ -22,7 +22,7 @@ const PredictionHistory: React.FC = () => {
         // Optimistic UI Update: immediately remove from view
         setHistory(prev => prev.filter(item => item.id !== id));
         try {
-            await fetch(`http://localhost:8000/history/${id}`, { method: 'DELETE' });
+            await fetchJson(`/history/${id}`, { method: 'DELETE' });
         } catch (e) {
             console.error("Failed to delete history item on the server", e);
             // Optionally could re-fetch history here on failure to restore state

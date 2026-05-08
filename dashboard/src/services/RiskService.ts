@@ -1,3 +1,5 @@
+import { API_BASE_URL, fetchJson } from '../config/api';
+
 // Shared Types
 export interface LocationQuery {
     country?: string;
@@ -43,7 +45,7 @@ export interface RiskChartData {
     }[];
 }
 
-const API_BASE = 'http://localhost:8000';
+export const API_BASE = API_BASE_URL;
 
 export const RiskService = {
     getMetrics: async (query?: LocationQuery): Promise<RiskMetric[]> => {
@@ -81,12 +83,9 @@ export const RiskService = {
     },
 
     getAlerts: async (query?: LocationQuery): Promise<Alert[]> => {
-        let url = `${API_BASE}/alerts?limit=50`;
-        if (query?.country) url += `&country=${query.country}`;
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to fetch alerts');
-        const data = await response.json();
+        const params = new URLSearchParams({ limit: '50' });
+        if (query?.country) params.append('country', query.country);
+        const data = await fetchJson<any[]>(`/alerts?${params.toString()}`);
         
         return data.map((alert: any) => ({
             id: alert.id.toString(),
@@ -109,16 +108,17 @@ export const RiskService = {
     },
 
     resolveAlert: async (alertId: string): Promise<boolean> => {
-        const response = await fetch(`${API_BASE}/alerts/${alertId}/resolve`, {
-            method: 'PATCH'
-        });
-        return response.ok;
+        try {
+            await fetchJson(`/alerts/${alertId}/resolve`, { method: 'PATCH' });
+            return true;
+        } catch (error) {
+            console.error('Failed to resolve alert', error);
+            return false;
+        }
     },
 
     getAlertsSummary: async (): Promise<any> => {
-        const response = await fetch(`${API_BASE}/alerts/summary`);
-        if (!response.ok) throw new Error('Failed to fetch alerts summary');
-        return await response.json();
+        return fetchJson('/alerts/summary');
     },
 
     getRiskTrend: async (query?: LocationQuery): Promise<RiskChartData> => {
@@ -152,38 +152,24 @@ export const RiskService = {
     },
 
     getGlobalSummary: async (query?: LocationQuery): Promise<any> => {
-        let url = `${API_BASE}/analytics/global_summary`;
         const params = new URLSearchParams();
         if (query?.country) params.append('country', query.country);
         if (query?.admin_region) params.append('admin_region', query.admin_region);
-        if (params.toString()) url += `?${params.toString()}`;
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to fetch global summary');
-        return await response.json();
+        const suffix = params.toString() ? `?${params.toString()}` : '';
+        return fetchJson(`/analytics/global_summary${suffix}`);
     },
 
     getHistory: async (query?: LocationQuery): Promise<any[]> => {
-        let url = `${API_BASE}/history?limit=50`;
-        const params = new URLSearchParams();
+        const params = new URLSearchParams({ limit: '50' });
         if (query?.country) params.append('country', query.country);
         if (query?.admin_region) params.append('admin_region', query.admin_region);
-        if (params.toString()) url += `&${params.toString()}`;
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to fetch history');
-        return await response.json();
+        return fetchJson(`/history?${params.toString()}`);
     },
 
     getActiveDetections: async (query?: LocationQuery): Promise<any[]> => {
-        let url = `${API_BASE}/detections?limit=100`;
-        const params = new URLSearchParams();
+        const params = new URLSearchParams({ limit: '100' });
         if (query?.country) params.append('country', query.country);
         if (query?.admin_region) params.append('admin_region', query.admin_region);
-        if (params.toString()) url += `&${params.toString()}`;
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to fetch detections');
-        return await response.json();
+        return fetchJson(`/detections?${params.toString()}`);
     }
 };

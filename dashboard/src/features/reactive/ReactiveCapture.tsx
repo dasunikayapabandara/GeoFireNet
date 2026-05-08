@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Camera, RefreshCw, CheckCircle2, AlertTriangle, Loader2, RotateCw, Upload, Video, VideoOff } from 'lucide-react';
+import { apiUrl } from '../../config/api';
 import '../../styles/ReactiveCapture.css';
 
 const ReactiveCapture: React.FC = () => {
@@ -90,20 +91,21 @@ const ReactiveCapture: React.FC = () => {
         formData.append('file', blob, 'capture.jpg');
 
         try {
-            const response = await fetch('http://localhost:8000/predict/reactive', {
+            const url = apiUrl('/predict/reactive');
+            const response = await fetch(url, {
                 method: 'POST',
                 body: formData,
             });
 
             if (!response.ok) {
-                throw new Error('Analysis failed');
+                throw new Error(`Analysis failed at ${url} with status ${response.status}`);
             }
 
             const data = await response.json();
             setResult(data);
         } catch (err) {
             console.error("Analysis error:", err);
-            setError("Failed to connect to backend. Please ensure the backend is running.");
+            setError(err instanceof Error ? err.message : "Failed to connect to backend. Please ensure the backend is running.");
         } finally {
             setIsLoading(false);
         }

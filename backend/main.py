@@ -21,6 +21,7 @@ from backend.api.routes import (
 )
 from backend.database import SessionLocal
 from backend.api.deps import get_db, get_predictor
+from backend.config import settings
 
 app = FastAPI(title="GeoFireNet Risk API v2")
 
@@ -71,7 +72,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Allow CORS for React Dashboard
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[origin.strip() for origin in settings.CORS_ALLOW_ORIGINS.split(",") if origin.strip()],
+    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1|0\.0\.0\.0|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+):517\d$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

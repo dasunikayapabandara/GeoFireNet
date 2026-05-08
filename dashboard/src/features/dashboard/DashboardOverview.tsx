@@ -3,14 +3,20 @@ import RiskCard from './RiskCard';
 import RiskChart from './RiskChart';
 import { AlertCircle, RefreshCw, Activity } from 'lucide-react';
 import { RiskService, type RiskMetric, type Alert, type RiskChartData } from '../../services/RiskService';
+import { API_BASE_URL, checkBackendStatus } from '../../config/api';
 import '../../styles/DashboardOverview.css';
+
+interface DashboardError {
+    message: string;
+    details: string[];
+}
 
 const DashboardOverview: React.FC = () => {
     const [metrics, setMetrics] = useState<RiskMetric[]>([]);
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [chartData, setChartData] = useState<RiskChartData | undefined>(undefined);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<DashboardError | null>(null);
     const [countryFilter, setCountryFilter] = useState<string>('');
     const [viewMode, setViewMode] = useState<'predictive' | 'active'>('predictive');
 
@@ -30,7 +36,16 @@ const DashboardOverview: React.FC = () => {
             setChartData(trendData);
         } catch (err) {
             console.error("Failed to fetch dashboard data", err);
-            setError("Backend Unreachable. Ensure the GeoFireNet API is running.");
+            const status = await checkBackendStatus();
+            setError({
+                message: `Backend request failed for ${API_BASE_URL}.`,
+                details: [
+                    `Health check: ${status.health}`,
+                    `System status: ${status.system}`,
+                    'Start the API with: PYTHONPATH=. .venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000',
+                    'Confirm dashboard/.env contains VITE_API_BASE_URL=http://localhost:8000'
+                ]
+            });
         } finally {
             setLoading(false);
         }
@@ -89,9 +104,19 @@ const DashboardOverview: React.FC = () => {
             </div>
 
             {error && (
-                <div className="settings-alert error" style={{ marginBottom: '2rem' }}>
+                <div className="settings-alert error" style={{ marginBottom: '2rem', alignItems: 'flex-start' }}>
                     <AlertCircle size={20} />
-                    <span>{error}</span>
+                    <div>
+                        <strong>{error.message}</strong>
+                        <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem' }}>
+                            {error.details.map(detail => (
+                                <li key={detail}>{detail}</li>
+                            ))}
+                        </ul>
+                        <button className="btn btn-outline" onClick={fetchData} style={{ marginTop: '0.75rem' }}>
+                            Retry Connection
+                        </button>
+                    </div>
                 </div>
             )}
 

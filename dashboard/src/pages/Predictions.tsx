@@ -3,6 +3,7 @@ import PredictionForm from '../components/predictions/PredictionForm';
 import PredictionResultCard from '../components/predictions/PredictionResult';
 import PredictionHistory from '../components/predictions/PredictionHistory';
 import type { PredictionInput, PredictionResult } from '../types/prediction';
+import { ApiRequestError, fetchJson } from '../config/api';
 import '../styles/Predictions.css';
 
 const Predictions: React.FC = () => {
@@ -15,18 +16,18 @@ const Predictions: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const resp = await fetch('http://localhost:8000/predict', {
+            const resultData = await fetchJson<PredictionResult>('/predict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            if (!resp.ok) throw new Error('API Error');
-            const resultData = await resp.json();
             setResult(resultData);
             setLastInputs(data);
         } catch (e) {
             console.error("Prediction Error:", e);
-            setError("Failed to execute ML pipeline. Ensure backend is running.");
+            setError(e instanceof ApiRequestError
+                ? `Failed to execute ML pipeline via ${e.url}. ${e.status ? `Status: ${e.status}.` : 'Backend is unreachable.'}`
+                : "Failed to execute ML pipeline. Ensure backend is running.");
         } finally {
             setLoading(false);
         }

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, File, UploadFile
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -48,6 +48,15 @@ async def _background_db_save(features: schemas.PredictionRequest, result: dict,
         logger.error(f"Background I/O Error: {e}", exc_info=True)
     finally:
         db.close()
+
+@router.post("/reactive", response_model=schemas.ReactivePrediction)
+async def predict_reactive_fire(file: UploadFile = File(...)):
+    """Explicit placeholder for image-based reactive detection when a vision model is not deployed."""
+    logger.warning(f"Reactive image detection requested for file={file.filename}; no vision model is configured.")
+    raise HTTPException(
+        status_code=501,
+        detail="Reactive image detection is not configured in this deployment. Use predictive /predict telemetry inference."
+    )
 
 @router.post("", response_model=schemas.PredictionResponse)
 async def predict_risk(
@@ -134,4 +143,3 @@ async def predict_risk(
     except Exception as e:
         logger.error(f"Prediction API Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Prediction Error")
-

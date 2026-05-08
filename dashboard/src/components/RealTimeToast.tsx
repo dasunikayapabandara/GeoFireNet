@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ShieldAlert, X } from 'lucide-react';
+import { wsUrl } from '../config/api';
 import '../styles/RealTimeToast.css';
 
 interface AlertData {
@@ -16,7 +17,7 @@ const RealTimeToast: React.FC = () => {
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
-        const ws = new WebSocket('ws://localhost:8000/ws');
+        const ws = new WebSocket(wsUrl('/ws'));
 
         ws.onopen = () => {
             console.log('Connected to GeoFireNet WebSocket');
