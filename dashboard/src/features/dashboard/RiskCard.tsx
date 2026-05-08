@@ -10,7 +10,7 @@ interface RiskCardProps {
     status?: 'low' | 'moderate' | 'high' | 'extreme';
 }
 
-const RiskCard: React.FC<RiskCardProps> = ({ title, value, change, trend, status = 'low' }) => {
+const RiskCard: React.FC<RiskCardProps> = ({ title, value, change, trend, status }) => {
     const getTrendIcon = () => {
         if (trend === 'up') return <ArrowUpRight size={16} color="var(--accent-risk-extreme)" />;
         if (trend === 'down') return <ArrowDownRight size={16} color="var(--accent-risk-low)" />;
@@ -30,7 +30,7 @@ const RiskCard: React.FC<RiskCardProps> = ({ title, value, change, trend, status
     const isTrendWarning = trend === 'up' && status !== 'low';
 
     return (
-        <div className={`card ${styles.riskCard} ${styles[status]}`}>
+        <div className={`card ${styles.riskCard} ${status ? styles[status] : ''}`}>
             <div className={styles.header}>
                 <h3 className={styles.title}>{title}</h3>
                 {status && (

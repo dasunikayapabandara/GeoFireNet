@@ -51,7 +51,7 @@ export const RiskService = {
     getMetrics: async (query?: LocationQuery): Promise<RiskMetric[]> => {
         try {
             const summary = await RiskService.getGlobalSummary(query);
-            const alertsSummary = await RiskService.getAlertsSummary();
+            const alertsSummary = await RiskService.getAlertsSummary(query);
             
             // Calculate an aggregate risk value from global summary if possible
             const totalPredictions = summary.predictions_summary.reduce((acc: number, curr: any) => acc + curr.count, 0);
@@ -59,7 +59,24 @@ export const RiskService = {
                 .filter((r: any) => r.level === 'High' || r.level === 'Extreme')
                 .reduce((acc: number, curr: any) => acc + curr.count, 0);
             
-            const riskValue = totalPredictions > 0 ? Math.round((highExtreme / totalPredictions) * 100) : 0;
+            if (totalPredictions === 0) {
+                return [
+                    {
+                        title: query?.country ? `${query.country} Risk Index` : "Global Risk Index",
+                        value: "No Data",
+                        change: "No recent prediction",
+                        trend: "neutral"
+                    },
+                    {
+                        title: "Active Alerts",
+                        value: alertsSummary.active_total.toString(),
+                        trend: "neutral",
+                        status: alertsSummary.active_total > 5 ? "high" : "low"
+                    }
+                ];
+            }
+
+            const riskValue = Math.round((highExtreme / totalPredictions) * 100);
 
             return [
                 {
@@ -117,8 +134,12 @@ export const RiskService = {
         }
     },
 
-    getAlertsSummary: async (): Promise<any> => {
-        return fetchJson('/alerts/summary');
+    getAlertsSummary: async (query?: LocationQuery): Promise<any> => {
+        const params = new URLSearchParams();
+        if (query?.country) params.append('country', query.country);
+        if (query?.admin_region) params.append('admin_region', query.admin_region);
+        const suffix = params.toString() ? `?${params.toString()}` : '';
+        return fetchJson(`/alerts/summary${suffix}`);
     },
 
     getRiskTrend: async (query?: LocationQuery): Promise<RiskChartData> => {

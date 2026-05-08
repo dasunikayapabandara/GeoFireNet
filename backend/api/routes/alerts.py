@@ -13,19 +13,38 @@ async def get_alerts(limit: int = 50, status: str = None, severity: str = None, 
     return crud.get_alerts(db, limit=limit, status=status, severity=severity, country=country)
 
 @router.get("/summary")
-async def get_alerts_summary(db: Session = Depends(get_db)):
-    """Return counts for the top-level KPI cards with basic in-memory caching."""
+async def get_alerts_summary(country: str = None, admin_region: str = None, db: Session = Depends(get_db)):
+    """Return counts for the top-level KPI cards with basic in-memory caching keyed by query."""
     import time
-    if hasattr(router, "_summary_cache") and time.time() - getattr(router, "_summary_timestamp", 0) < 60:
-        return router._summary_cache
+    cache_key = f"{country}_{admin_region}"
+    if not hasattr(router, "_summary_cache"):
+        router._summary_cache = {}
+        router._summary_timestamp = {}
+        
+    if cache_key in router._summary_cache and time.time() - router._summary_timestamp.get(cache_key, 0) < 60:
+        return router._summary_cache[cache_key]
 
-    total_active = db.query(models.Alert).filter(models.Alert.status == 'active').count()
-    high_active = db.query(models.Alert).filter(models.Alert.status == 'active', models.Alert.severity == 'high').count()
-    extreme_active = db.query(models.Alert).filter(models.Alert.status == 'active', models.Alert.severity == 'extreme').count()
+    # Base queries
+    q_active = db.query(models.Alert).filter(models.Alert.status == 'active')
+    q_today = db.query(models.Alert)
+    
+    if country or admin_region:
+        q_active = q_active.join(models.Location, models.Alert.location_id == models.Location.id)
+        q_today = q_today.join(models.Location, models.Alert.location_id == models.Location.id)
+        if country:
+            q_active = q_active.filter(models.Location.country == country)
+            q_today = q_today.filter(models.Location.country == country)
+        if admin_region:
+            q_active = q_active.filter(models.Location.admin_region == admin_region)
+            q_today = q_today.filter(models.Location.admin_region == admin_region)
+
+    total_active = q_active.count()
+    high_active = q_active.filter(models.Alert.severity == 'high').count()
+    extreme_active = q_active.filter(models.Alert.severity == 'extreme').count()
     
     from datetime import datetime, date
     today_start = datetime.combine(date.today(), datetime.min.time())
-    today_count = db.query(models.Alert).filter(models.Alert.triggered_at >= today_start).count()
+    today_count = q_today.filter(models.Alert.triggered_at >= today_start).count()
     
     result = {
         "active_total": total_active,
@@ -33,8 +52,8 @@ async def get_alerts_summary(db: Session = Depends(get_db)):
         "active_extreme": extreme_active,
         "generated_today": today_count
     }
-    router._summary_cache = result
-    router._summary_timestamp = time.time()
+    router._summary_cache[cache_key] = result
+    router._summary_timestamp[cache_key] = time.time()
     return result
 
 @router.get("/{alert_id}", response_model=schemas.Alert)

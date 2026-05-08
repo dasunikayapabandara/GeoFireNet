@@ -59,6 +59,11 @@ const DashboardOverview: React.FC = () => {
     };
 
     useEffect(() => {
+        // Clear old data when filters change to prevent stale views
+        setMetrics([]);
+        setAlerts([]);
+        setChartData(undefined);
+        
         fetchData();
         const interval = setInterval(fetchData, 30000); // Auto-refresh every 30s
         return () => clearInterval(interval);
