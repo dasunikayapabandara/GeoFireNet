@@ -28,7 +28,7 @@ app = FastAPI(title="GeoFireNet Risk API v2")
 async def startup_event():
     logger.info("GeoFireNet API starting up...")
     # Log model readiness
-    predictor = get_predictor()
+    predictor = await get_predictor()
     if predictor.model is None or predictor.thresholds is None:
         logger.error("CRITICAL: Predictor ML artifacts are missing. System will fail on prediction requests.")
     else:

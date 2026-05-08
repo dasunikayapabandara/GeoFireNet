@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, CheckConstraint, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from backend.database import Base
@@ -23,6 +23,12 @@ class Location(Base):
 class WeatherInput(Base):
     """Stores the exact telemetry used to generate a risk score."""
     __tablename__ = "weather_inputs"
+    __table_args__ = (
+        CheckConstraint("temp >= -20 AND temp <= 60", name="ck_weather_temp_range"),
+        CheckConstraint("humidity >= 0 AND humidity <= 100", name="ck_weather_humidity_range"),
+        CheckConstraint("wind >= 0 AND wind <= 150", name="ck_weather_wind_range"),
+        CheckConstraint("veg_moisture >= 0 AND veg_moisture <= 1", name="ck_weather_veg_moisture_range"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     temp = Column(Float, nullable=False)
@@ -49,6 +55,14 @@ class ModelVersion(Base):
 class RiskPredictionLog(Base):
     """Master log of all generated predictions for historical tracking."""
     __tablename__ = "risk_prediction_logs"
+    __table_args__ = (
+        CheckConstraint("risk_score >= 0 AND risk_score <= 100", name="ck_prediction_risk_score_range"),
+        CheckConstraint("risk_probability >= 0 AND risk_probability <= 1", name="ck_prediction_risk_probability_range"),
+        CheckConstraint("risk_level IN ('Low', 'Moderate', 'High', 'Extreme')", name="ck_prediction_risk_level"),
+        CheckConstraint("baseline_score >= 0 AND baseline_score <= 100", name="ck_prediction_baseline_score_range"),
+        Index("ix_prediction_level_timestamp", "risk_level", "timestamp"),
+        Index("ix_prediction_location_timestamp", "location_id", "timestamp"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
@@ -58,7 +72,7 @@ class RiskPredictionLog(Base):
     risk_probability = Column(Float, nullable=False) # Raw ML output
     risk_level = Column(String, nullable=False) # e.g., "High", "Extreme"
     baseline_score = Column(Float, nullable=False) # Reference heuristic
-    system_status = Column(String, nullable=False) # Production vs Mock
+    system_status = Column(String, nullable=False) # Production, Simulation, or Degraded
 
     # Foreign Keys
     location_id = Column(Integer, ForeignKey("locations.id"), nullable=True)
@@ -72,17 +86,24 @@ class RiskPredictionLog(Base):
     location = relationship("Location", back_populates="predictions")
     weather_input = relationship("WeatherInput", back_populates="prediction")
     model_version = relationship("ModelVersion", back_populates="predictions")
-    alert = relationship("Alert", back_populates="prediction", uselist=False)
+    alert = relationship("Alert", back_populates="prediction", uselist=False, cascade="all, delete-orphan")
 
 
 class Alert(Base):
     """Automatically generated actionable alerts for high-risk predictions."""
     __tablename__ = "alerts"
+    __table_args__ = (
+        CheckConstraint("risk_score >= 0 AND risk_score <= 100", name="ck_alert_risk_score_range"),
+        CheckConstraint("risk_level IN ('Low', 'Moderate', 'High', 'Extreme')", name="ck_alert_risk_level"),
+        CheckConstraint("severity IN ('moderate', 'high', 'extreme')", name="ck_alert_severity"),
+        CheckConstraint("status IN ('active', 'acknowledged', 'resolved')", name="ck_alert_status"),
+        Index("ix_alert_status_severity_triggered", "status", "severity", "triggered_at"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     
     # Core Relationships
-    prediction_id = Column(Integer, ForeignKey("risk_prediction_logs.id"), nullable=False)
+    prediction_id = Column(Integer, ForeignKey("risk_prediction_logs.id", ondelete="CASCADE"), nullable=False)
     location_id = Column(Integer, ForeignKey("locations.id"), nullable=True)
     
     # Denormalized parameters for ultra-fast frontend rendering
@@ -142,4 +163,3 @@ class SystemSettings(Base):
     setting_value = Column(String, nullable=False)
     description = Column(String, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-

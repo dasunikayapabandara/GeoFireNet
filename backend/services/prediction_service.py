@@ -1,5 +1,5 @@
 import pandas as pd
-from backend.config import RISK_LEVELS_DEFAULT, settings
+from backend.config import settings
 from backend import model_registry
 from backend.core.logger import logger
 
@@ -17,10 +17,8 @@ class RiskPredictor:
     def get_risk_level(self, probability):
         """Map raw probability to a qualitative Risk Level based on calibrated thresholds."""
         if not self.thresholds:
-            logger.warning("No thresholds loaded, using hardcoded fallbacks.")
-            thresholds = {"Low": 0.3, "Moderate": 0.5, "High": 0.8}
-        else:
-            thresholds = self.thresholds
+            raise RuntimeError("Risk thresholds not loaded. Run calibration pipeline.")
+        thresholds = self.thresholds
 
         if probability <= thresholds.get("Low", 0.3):
             return "Low"
@@ -116,4 +114,3 @@ class RiskPredictor:
                 
         return drivers if drivers else ["Normal Conditions"]
         
-

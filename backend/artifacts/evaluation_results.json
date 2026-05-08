@@ -32,5 +32,11 @@
             "f1-score": 0.9,
             "support": 600.0
         }
+    },
+    "confusion_matrix": {
+        "TP": 159,
+        "TN": 381,
+        "FP": 30,
+        "FN": 30
     }
 }

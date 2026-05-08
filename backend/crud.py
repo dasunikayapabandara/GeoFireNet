@@ -37,7 +37,8 @@ def create_prediction_log(db: Session, log: schemas.RiskPredictionLogCreate):
         system_status=log.system_status,
         primary_drivers=log.primary_drivers,
         location_id=log.location_id,
-        weather_input_id=log.weather_input_id
+        weather_input_id=log.weather_input_id,
+        model_version_id=log.model_version_id
     )
     db.add(db_log)
     db.commit()
@@ -59,6 +60,29 @@ def get_prediction_history(db: Session, limit: int = 50, country: str = None, ad
             query = query.filter(models.Location.admin_region == admin_region)
             
     return query.order_by(models.RiskPredictionLog.timestamp.desc()).limit(limit).all()
+
+def delete_prediction_log(db: Session, prediction_id: int):
+    prediction = db.query(models.RiskPredictionLog).filter(models.RiskPredictionLog.id == prediction_id).first()
+    if not prediction:
+        return None
+
+    weather_input = prediction.weather_input
+    alert = prediction.alert
+
+    if alert:
+        db.delete(alert)
+    db.delete(prediction)
+    db.flush()
+
+    if weather_input:
+        remaining = db.query(models.RiskPredictionLog).filter(
+            models.RiskPredictionLog.weather_input_id == weather_input.id
+        ).count()
+        if remaining == 0:
+            db.delete(weather_input)
+
+    db.commit()
+    return prediction
 
 def create_active_detection(db: Session, detection: schemas.ActiveDetectionLogCreate):
     db_detection = models.ActiveDetectionLog(**detection.model_dump())
@@ -102,10 +126,19 @@ def create_alert(db: Session, alert: schemas.AlertCreate):
     return db_alert
 
 def get_alert(db: Session, alert_id: int):
-    return db.query(models.Alert).filter(models.Alert.id == alert_id).first()
+    alert = db.query(models.Alert).options(
+        joinedload(models.Alert.location),
+        joinedload(models.Alert.prediction).joinedload(models.RiskPredictionLog.weather_input)
+    ).filter(models.Alert.id == alert_id).first()
+    if alert and alert.prediction:
+        alert.weather_input = alert.prediction.weather_input
+    return alert
 
 def get_alerts(db: Session, limit: int = 50, status: str = None, severity: str = None, country: str = None):
-    query = db.query(models.Alert).options(joinedload(models.Alert.location))
+    query = db.query(models.Alert).options(
+        joinedload(models.Alert.location),
+        joinedload(models.Alert.prediction).joinedload(models.RiskPredictionLog.weather_input)
+    )
     
     if status:
         query = query.filter(models.Alert.status == status)
@@ -116,7 +149,11 @@ def get_alerts(db: Session, limit: int = 50, status: str = None, severity: str =
         query = query.join(models.Location, models.Alert.location_id == models.Location.id)
         query = query.filter(models.Location.country == country)
         
-    return query.order_by(models.Alert.triggered_at.desc()).limit(limit).all()
+    alerts = query.order_by(models.Alert.triggered_at.desc()).limit(limit).all()
+    for alert in alerts:
+        if alert.prediction:
+            alert.weather_input = alert.prediction.weather_input
+    return alerts
 
 def update_alert_status(db: Session, alert_id: int, status: str):
     db_alert = db.query(models.Alert).filter(models.Alert.id == alert_id).first()
@@ -142,4 +179,3 @@ def create_system_log(db: Session, log: schemas.SystemLogCreate):
 # --- Analytics / Locations ---
 def get_all_locations(db: Session):
     return db.query(models.Location).all()
-

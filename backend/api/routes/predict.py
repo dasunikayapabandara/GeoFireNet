@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime
-import os
 
 from backend.api.deps import get_predictor, get_db
 from backend.database import SessionLocal
@@ -63,10 +62,24 @@ async def predict_risk(
         logger.info(f"Processing prediction request for region={features.admin_region}, country={features.country}")
         
         # Ingestion Flow
-        if features.temp is None or features.humidity is None or features.wind is None or features.veg_moisture is None:
+        missing_environmental_features = (
+            features.temp is None
+            or features.humidity is None
+            or features.wind is None
+            or features.veg_moisture is None
+        )
+        if missing_environmental_features:
+            if features.latitude == 0.0 and features.longitude == 0.0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Provide all environmental fields or explicit latitude/longitude for weather ingestion."
+                )
             from backend.services.data_ingestion import fetch_realtime_weather
             logger.info("Missing environmental features. Fetching real-time weather data.")
-            real_data = await fetch_realtime_weather(features.latitude, features.longitude)
+            try:
+                real_data = await fetch_realtime_weather(features.latitude, features.longitude)
+            except RuntimeError as e:
+                raise HTTPException(status_code=503, detail=str(e))
             
             features.temp = features.temp if features.temp is not None else real_data["temp"]
             features.humidity = features.humidity if features.humidity is not None else real_data["humidity"]
@@ -112,6 +125,8 @@ async def predict_risk(
             model_version=version_name,
             timestamp=datetime.utcnow()
         )
+    except HTTPException:
+        raise
     except RuntimeError as e:
         if "Model not trained" in str(e):
             raise HTTPException(status_code=503, detail="Model not trained. Run training pipeline.")
@@ -119,5 +134,4 @@ async def predict_risk(
     except Exception as e:
         logger.error(f"Prediction API Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Prediction Error")
-
 

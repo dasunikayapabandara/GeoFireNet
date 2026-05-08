@@ -1,6 +1,4 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import folium
 from streamlit_folium import st_folium
 from model import WildfireModel
@@ -24,7 +22,7 @@ date = st.sidebar.date_input("Simulation Date", value=datetime.today())
 month = date.month
 
 # Seasonality offsets (Summer is hotter/drier)
-# Mock logic: Month 6-9 (June-Sept) gets temp boost +5C, humidity drop -10%
+# Prototype seasonality adjustment: Month 6-9 (June-Sept) gets temp boost +5C, humidity drop -10%.
 is_fire_season = 6 <= month <= 10
 season_temp_offset = 5 if is_fire_season else -2
 season_hum_offset = -10 if is_fire_season else 10
@@ -76,8 +74,8 @@ with col1:
         tiles="OpenStreetMap"
     )
 
-    # Define Mock Regions (GeoJSON) - Same as before
-    mock_regions = {
+    # Static prototype regions used for local geospatial inspection.
+    sample_regions = {
         "type": "FeatureCollection",
         "features": [
             {
@@ -100,10 +98,10 @@ with col1:
 
     # Filter regions if specific one selected
     if selected_region != "All Regions":
-        mock_regions["features"] = [f for f in mock_regions["features"] if f["properties"]["name"] == selected_region]
+        sample_regions["features"] = [f for f in sample_regions["features"] if f["properties"]["name"] == selected_region]
 
     # Calculate Risk per Region
-    for feature in mock_regions["features"]:
+    for feature in sample_regions["features"]:
         props = feature["properties"]
         local_temp = temp + props.get("temp_offset", 0)
         risk_prob = model.predict(local_temp, humidity, wind, veg_moisture)
@@ -114,7 +112,7 @@ with col1:
         return {"fillColor": feature["properties"]["color"], "color": "black", "weight": 1, "fillOpacity": 0.6}
 
     folium.GeoJson(
-        mock_regions,
+        sample_regions,
         style_function=style_function,
         tooltip=folium.GeoJsonTooltip(fields=["name", "risk_prob", "risk_level"], localize=True)
     ).add_to(m)
@@ -140,13 +138,13 @@ with col2:
     st.subheader("Regional Analytics")
     
     # Calculate visible region scores
-    ml_scores = [f["properties"]["risk_prob"] for f in mock_regions["features"]]
+    ml_scores = [f["properties"]["risk_prob"] for f in sample_regions["features"]]
     avg_ml = sum(ml_scores) / len(ml_scores) if ml_scores else 0
     avg_ml_level, _ = model.get_risk_level(avg_ml)
     
     # Calculate Heuristic Baselines for same regions
     base_scores = []
-    for f in mock_regions["features"]:
+    for f in sample_regions["features"]:
         props = f["properties"]
         l_temp = temp + props.get("temp_offset", 0)
         base_scores.append(model.predict_heuristic(l_temp, humidity, wind, veg_moisture))

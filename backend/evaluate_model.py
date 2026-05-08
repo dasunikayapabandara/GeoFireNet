@@ -24,7 +24,7 @@ def evaluate():
         
     print(f"Evaluating models on {len(X_test)} test samples...")
     
-    # 2. Setup Comparison Models (Logistic Regression & Gradient Boosting as XGBoost fallback)
+    # 2. Setup comparison models (Logistic Regression & Gradient Boosting)
     preprocessor = features.create_preprocessing_pipeline()
     
     lr_pipeline = Pipeline(steps=[
@@ -78,6 +78,8 @@ def evaluate():
     y_proba_rf = rf_model.predict_proba(X_test)[:, 1]
     
     report = classification_report(y_test, y_pred_rf, output_dict=True)
+    precision_curve, recall_curve, _ = precision_recall_curve(y_test, y_proba_rf)
+    pr_auc = auc(recall_curve, precision_curve)
     
     # 4. Generate & Save Confusion Matrix Plot
     cm = confusion_matrix(y_test, y_pred_rf)
@@ -95,6 +97,21 @@ def evaluate():
     }
     with open(os.path.join(config.ARTIFACTS_DIR, "confusion_matrix_values.json"), "w") as f:
         json.dump(cm_results, f, indent=4)
+
+    selected_results = {
+        "test_samples": int(len(y_test)),
+        "roc_auc": float(roc_auc_score(y_test, y_proba_rf)),
+        "pr_auc": float(pr_auc),
+        "accuracy": float(accuracy_score(y_test, y_pred_rf)),
+        "precision": float(precision_score(y_test, y_pred_rf, zero_division=0)),
+        "recall": float(recall_score(y_test, y_pred_rf, zero_division=0)),
+        "f1_score": float(f1_score(y_test, y_pred_rf, zero_division=0)),
+        "classification_report": report,
+        "confusion_matrix": cm_results
+    }
+    with open(config.EVAL_RESULTS_PATH, "w") as f:
+        json.dump(selected_results, f, indent=4)
+    print(f"Saved Evaluation Results to {config.EVAL_RESULTS_PATH}")
         
     plt.figure(figsize=(6, 5))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 

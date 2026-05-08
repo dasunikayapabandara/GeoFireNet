@@ -1,13 +1,25 @@
 import httpx
+from datetime import datetime, timezone
 from backend.config import settings
 from backend.core.logger import logger
+
+def _normalize_provider(provider: str) -> str:
+    normalized = (provider or "open-meteo").strip().lower()
+    aliases = {
+        "openmeteo": "open-meteo",
+        "open_meteo": "open-meteo",
+        "openweathermap": "open-weather",
+        "openweather": "open-weather",
+        "open_weather": "open-weather",
+    }
+    return aliases.get(normalized, normalized)
 
 async def fetch_realtime_weather(lat: float, lon: float) -> dict:
     """
     Fetch real-time weather data for a given latitude and longitude.
     Supports Open-Meteo (default, no key) and OpenWeatherMap (key required).
     """
-    provider = settings.WEATHER_API_PROVIDER
+    provider = _normalize_provider(settings.WEATHER_API_PROVIDER)
     api_key = settings.WEATHER_API_KEY
     
     logger.info(f"Fetching real-time weather using provider='{provider}' for coordinates ({lat}, {lon})")
@@ -17,9 +29,12 @@ async def fetch_realtime_weather(lat: float, lon: float) -> dict:
             logger.error("OpenWeatherMap selected but WEATHER_API_KEY is not configured.")
             raise RuntimeError("Weather provider 'open-weather' requires an API key. Please configure WEATHER_API_KEY.")
         url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
-    else:
+    elif provider == "open-meteo":
         # Default to Open-Meteo
         url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m"
+    else:
+        logger.error(f"Unsupported weather provider configured: {provider}")
+        raise RuntimeError(f"Unsupported weather provider '{provider}'. Use 'open-meteo' or 'open-weather'.")
     
     try:
         async with httpx.AsyncClient() as client:
@@ -28,14 +43,32 @@ async def fetch_realtime_weather(lat: float, lon: float) -> dict:
             data = response.json()
             
             if provider == "open-weather":
-                temp = data.get("main", {}).get("temp", 25.0)
-                humidity = data.get("main", {}).get("humidity", 50.0)
-                wind = data.get("wind", {}).get("speed", 10.0) * 3.6 # m/s to km/h
+                main = data.get("main") or {}
+                wind_payload = data.get("wind") or {}
+                required = {
+                    "main.temp": main.get("temp"),
+                    "main.humidity": main.get("humidity"),
+                    "wind.speed": wind_payload.get("speed"),
+                }
+                missing = [name for name, value in required.items() if value is None]
+                if missing:
+                    raise RuntimeError(f"Weather provider response missing required fields: {', '.join(missing)}")
+                temp = required["main.temp"]
+                humidity = required["main.humidity"]
+                wind = required["wind.speed"] * 3.6 # m/s to km/h
             else:
                 current = data.get("current", {})
-                temp = current.get("temperature_2m", 25.0)
-                humidity = current.get("relative_humidity_2m", 50.0)
-                wind = current.get("wind_speed_10m", 10.0) # km/h
+                required = {
+                    "current.temperature_2m": current.get("temperature_2m"),
+                    "current.relative_humidity_2m": current.get("relative_humidity_2m"),
+                    "current.wind_speed_10m": current.get("wind_speed_10m"),
+                }
+                missing = [name for name, value in required.items() if value is None]
+                if missing:
+                    raise RuntimeError(f"Weather provider response missing required fields: {', '.join(missing)}")
+                temp = required["current.temperature_2m"]
+                humidity = required["current.relative_humidity_2m"]
+                wind = required["current.wind_speed_10m"] # km/h
             
             # Vegetation moisture proxy (NDVI substitute)
             # Logic: Higher temp and lower humidity lead to drier vegetation
@@ -49,8 +82,10 @@ async def fetch_realtime_weather(lat: float, lon: float) -> dict:
                 "wind": float(wind),
                 "veg_moisture": round(float(veg_moisture), 4),
                 "provider": provider,
-                "timestamp": httpx.utils.format_byte_size(0) # placeholder for actual response headers if needed
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
+    except RuntimeError:
+        raise
     except Exception as e:
         logger.error(f"Failed to fetch real-time weather data from {provider}: {e}")
         raise RuntimeError(f"Unable to reach external weather API ({provider}) for coordinates ({lat}, {lon}).")

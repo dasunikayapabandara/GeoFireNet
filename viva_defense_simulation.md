@@ -20,9 +20,9 @@
 
 * **Defense**: "Accuracy is misleading here. The baseline performs well on 'normal' days because physics is linear. However, the ML model provides a **Critical Advantage in Edge Cases**, specifically identifying non-linear risk amplifications that the linear baseline misses. We optimize for *Recall during Extremes*, not average accuracy." (Ref: `model_comparison_narrative.md`)
 
-### Q3: "You set the High Risk threshold at 50/100. That seems surprisingly low. Did you just guess?"
+### Q3: "Your High Risk threshold is calibrated below the default 0.5 probability. Did you just guess?"
 
-* **Defense**: "No, it was empirically calibrated. Our analysis (`calibrate_thresholds.py`) showed that while Threshold 60 maximized F1-score, it missed ~7% of fires. We selected Threshold 50 to ensure **100% Recall**, prioritizing public safety over reducing false alarms." (Ref: `experiment_traceability.md`)
+* **Defense**: "No, it was empirically calibrated. `calibrate_thresholds.py` searches probability thresholds that keep recall near 1.0. In wildfire risk screening, a missed dangerous condition is worse than an extra human-reviewed alert, so threshold calibration intentionally prioritizes recall over precision." (Ref: `experiment_traceability.md`)
 
 ### Q4: "How do we know your model isn't just memorizing the synthetic training data (Overfitting)?"
 

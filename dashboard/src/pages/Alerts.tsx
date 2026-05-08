@@ -28,7 +28,7 @@ const Alerts: React.FC = () => {
 
     useEffect(() => {
         fetchData();
-        // Fallback polling for the dashboard showcase
+        // Polling complements WebSocket notifications and keeps filtered views current.
         const interval = setInterval(fetchData, 10000);
         return () => clearInterval(interval);
     }, [fetchData]);
@@ -202,32 +202,38 @@ const Alerts: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="weather-grid">
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                                        <ThermometerSun size={16} /> Temperature
+                            {selectedAlert.weather ? (
+                                <div className="weather-grid">
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                                            <ThermometerSun size={16} /> Temperature
+                                        </div>
+                                        <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{selectedAlert.weather.temp}°C</span>
                                     </div>
-                                    <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{selectedAlert.weather.temp}°C</span>
-                                </div>
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                                        <Droplets size={16} /> Humidity
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                                            <Droplets size={16} /> Humidity
+                                        </div>
+                                        <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{selectedAlert.weather.humidity}%</span>
                                     </div>
-                                    <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{selectedAlert.weather.humidity}%</span>
-                                </div>
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                                        <Wind size={16} /> Wind Speed
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                                            <Wind size={16} /> Wind Speed
+                                        </div>
+                                        <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{selectedAlert.weather.wind} km/h</span>
                                     </div>
-                                    <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{selectedAlert.weather.wind} km/h</span>
-                                </div>
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
-                                        <Leaf size={16} /> Veg Moisture
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                                            <Leaf size={16} /> Veg Moisture
+                                        </div>
+                                        <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{(selectedAlert.weather.veg * 100).toFixed(0)}%</span>
                                     </div>
-                                    <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>{(selectedAlert.weather.veg * 100).toFixed(0)}%</span>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="settings-alert error" style={{ marginTop: '1.5rem' }}>
+                                    Weather snapshot unavailable for this alert record.
+                                </div>
+                            )}
                         </div>
                         <div className="modal-footer">
                             <button className="btn btn-ghost" onClick={() => setSelectedAlert(null)}>Close</button>

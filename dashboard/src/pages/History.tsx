@@ -33,7 +33,7 @@ const History: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h2>Historical Log</h2>
-                    <p className="text-muted">A tabular log of predictions returned by the active Random Forest pipeline.</p>
+                    <p className="text-muted">A tabular log of predictions returned by the active RandomForestClassifier pipeline.</p>
                 </div>
                 {loading && <div className="animate-spin text-muted"><Clock size={20} /></div>}
             </div>
@@ -69,7 +69,7 @@ const History: React.FC = () => {
                                     <td style={{ padding: '1rem 0.5rem' }}>
                                         {log.location ?
                                             `${log.location.admin_region || log.location.name || ''}, ${log.location.country || ''}`.replace(/^, | ,/g, '') :
-                                            'Simulator User Hub'}
+                                            'Unspecified Location'}
                                     </td>
                                     <td style={{ padding: '1rem 0.5rem' }}>
                                         <span style={{

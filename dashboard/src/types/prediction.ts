@@ -10,11 +10,15 @@ export interface PredictionInput {
 export interface PredictionResult {
     risk_score: number;
     risk_probability: number;
+    confidence: number;
     risk_level: string;
     baseline_score: number;
     baseline_level: string;
-    explanation: string[];
+    key_drivers: string[];
     system_status: string;
+    alert_triggered: boolean;
+    model_version: string;
+    timestamp: string;
 }
 
 export interface HistoryItem {

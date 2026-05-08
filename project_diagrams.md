@@ -65,9 +65,9 @@ The lineage of the machine learning model from data to frozen artifact.
 flowchart LR
     DataGen["Synthetic Data Generation<br>(Calibrated to CA Summer)"]
     Preproc["Preprocessing<br>(Normalization 0-1)"]
-    Train["Training<br>(Random Forest Regressor)"]
+    Train["Training<br>(RandomForestClassifier)"]
     Eval["Evaluation<br>(Recall & F1 Analysis)"]
-    Artifact["Frozen Artifact<br>(model.pkl)"]
+    Artifact["Frozen Artifact<br>backend/artifacts/model.pkl"]
     Prov["Provenance Doc<br>(SHA-256 Hash)"]
     
     DataGen --> Preproc

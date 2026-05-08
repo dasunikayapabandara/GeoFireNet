@@ -81,7 +81,7 @@ cd backend
 # Make sure to activate the virtual environment!
 source venv/bin/activate
 pip install -r requirements.txt
-python train_model.py  # Generate model.pkl
+python train_model.py  # Generate backend/artifacts/model.pkl
 
 # Start the API Server from the root path
 cd ..
@@ -106,7 +106,7 @@ python evaluate_model.py
 
 * **Frontend**: React, TypeScript, Leaflet, Chart.js, CSS Modules
 * **Backend**: Python, FastAPI, Uvicorn, Joblib
-* **AI/ML**: Scikit-Learn (Random Forest Regressor), Pandas, NumPy
+* **AI/ML**: Scikit-Learn (RandomForestClassifier), Pandas, NumPy
 * **DevOps**: Vite, ESLint, npm
 
 ## 📜 License

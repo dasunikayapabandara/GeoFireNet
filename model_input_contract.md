@@ -5,13 +5,13 @@
 
 ## 1. Input Variables
 
-The model accepts a JSON object with the following four scalar fields. All fields are **Required**.
+The prediction API accepts either a complete manual telemetry payload or a location payload that can be completed through the configured weather provider.
 
 | Field | Type | Unit | Min | Max | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `temp` | Float | Celsius (°C) | 0.0 | 50.0 | Surface air temperature. |
+| `temp` | Float | Celsius (°C) | -20.0 | 60.0 | Surface air temperature. |
 | `humidity` | Float | Percent (%) | 0.0 | 100.0 | Relative humidity. |
-| `wind` | Float | km/h | 0.0 | 100.0 | Sustained wind speed. |
+| `wind` | Float | km/h | 0.0 | 150.0 | Sustained wind speed. |
 | `veg_moisture` | Float | Index (0-1) | 0.0 | 1.0 | Normalized vegetation moisture index. |
 
 ## 2. Validation & Error Handling
@@ -28,9 +28,9 @@ To ensure system robustness during demonstrations and simulations:
 
 ### Missing or Null Values
 
-* **Behavior**: Strict Enforcement.
-* **Response**: `422 Unprocessable Entity` (FastAPI default) or `400 Bad Request`.
-* **Logic**: Predictions cannot be generated without complete environmental data.
+* **Manual Prediction Behavior**: Strict enforcement. If latitude/longitude are not provided, all four environmental fields must be present.
+* **Weather Ingestion Behavior**: If one or more environmental fields are missing and explicit latitude/longitude are provided, the backend attempts to fetch current weather from the configured provider.
+* **Failure Behavior**: If weather ingestion is unavailable or misconfigured, the API returns a structured error and does not fabricate prediction inputs.
 
 ## 3. Data Types
 

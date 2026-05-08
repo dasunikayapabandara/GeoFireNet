@@ -4,10 +4,10 @@ Welcome to the backend ML documentation for GeoFireNet. This module is designed 
 
 ## 🧠 Architecture Overview
 
-The target variable is binary `fire_risk_class` rather than a continuous mock regression score, formulated as a **Probability-Based Classification Problem**.
+The target variable is binary `is_fire_risk` rather than a continuous risk regression score, formulated as a **Probability-Based Classification Problem**.
 
-1. **Model:** The pipeline compares Logistic Regression, Random Forest, and HistGradientBoosting, selecting the best model based on generalized discriminative power (ROC-AUC).
-2. **Preprocessing:** Uses scikit-learn `Pipeline` and `ColumnTransformer` to handle missing data imputation and dynamic feature engineering (e.g., Temperature $\times$ Wind Speed Interaction).
+1. **Model:** The pipeline compares Logistic Regression, RandomForestClassifier, and GradientBoostingClassifier, selecting the production model based on discriminative power and explainability.
+2. **Preprocessing:** Uses a scikit-learn `Pipeline` to handle missing data imputation, scaling, and dynamic feature engineering (e.g., Temperature $\times$ Wind Speed Interaction).
 3. **Threshold Calibration:** Instead of using the default 0.5 threshold, our `calibrate_thresholds.py` script specifically tunes the decision boundary to achieve **near 100% Recall**. This explicitly prioritizes a "Safety First" paradigm where False Positives are acceptable but Missed Detections are critical failures.
 
 ## 📂 Key Files & Structure
@@ -41,7 +41,7 @@ All trained `.pkl` files, metrics `.json`, and plot `.png` images will be saved 
 
 ## 🛡️ Inference Safety (API Contract)
 
-The API relies on `predict.py` interacting with the FastAPI `/predict` endpoint.
+The API relies on `services/prediction_service.py` interacting with the FastAPI `/predict` endpoint.
 Incoming telemetry is intercepted by **Pydantic Validation Clamping**—for instance, if a sensor misreads $999^\circ C$, the system gracefully soft-clamps it to $60^\circ C$ and returns a prediction instead of crashing.
 
 This guarantees **High Availability** during operations and maintains the "system stability" requirement for the finalized project.

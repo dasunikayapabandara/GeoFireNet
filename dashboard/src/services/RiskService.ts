@@ -96,7 +96,7 @@ export const RiskService = {
             severity: alert.severity.toLowerCase(),
             status: alert.status,
             score: alert.risk_score,
-            drivers: alert.key_drivers ? alert.key_drivers.split(',') : [],
+            drivers: alert.key_drivers ? alert.key_drivers.split(',').map((driver: string) => driver.trim()).filter(Boolean) : [],
             region: alert.location?.admin_region || 'Unknown',
             country: alert.location?.country || 'Unknown',
             weather: alert.weather_input ? {
@@ -121,12 +121,33 @@ export const RiskService = {
         return await response.json();
     },
 
-    getRiskTrend: async (_query?: LocationQuery): Promise<RiskChartData> => {
-        // Pending backend implementation for trend data
-        // For now, we return an empty structure or throw to trigger error state
+    getRiskTrend: async (query?: LocationQuery): Promise<RiskChartData> => {
+        const history = await RiskService.getHistory(query);
+        const grouped = new Map<string, { total: number; count: number }>();
+
+        history.forEach((item: any) => {
+            const label = new Date(item.timestamp).toLocaleDateString();
+            const current = grouped.get(label) || { total: 0, count: 0 };
+            current.total += Number(item.risk_probability || 0) * 100;
+            current.count += 1;
+            grouped.set(label, current);
+        });
+
+        const labels = Array.from(grouped.keys()).reverse();
+        const data = labels.map(label => {
+            const bucket = grouped.get(label);
+            return bucket ? Math.round(bucket.total / bucket.count) : 0;
+        });
+
         return {
-            labels: [],
-            datasets: []
+            labels,
+            datasets: [{
+                label: 'Average Risk Probability',
+                data,
+                fill: true,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.18)'
+            }]
         };
     },
 

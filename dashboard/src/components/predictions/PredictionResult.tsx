@@ -51,12 +51,12 @@ const PredictionResultCard: React.FC<Props> = ({ result, inputs }) => {
                 <h4 className="section-title">Model Inference Reasoning</h4>
 
                 <p className="text-muted mb-4 small">
-                    The Random Forest Regressor flagged the following primary anomalous conditions driving the overall risk score index.
+                    The RandomForestClassifier flagged the following primary conditions driving the wildfire risk probability.
                 </p>
 
                 <ul className="driver-list">
-                    {result.explanation.length > 0 ? (
-                        result.explanation.map((driver, idx) => (
+                    {result.key_drivers.length > 0 ? (
+                        result.key_drivers.map((driver, idx) => (
                             <li key={idx} className="driver-item">
                                 <span className="driver-icon">⚠️</span>
                                 <span className="driver-text">{driver}</span>

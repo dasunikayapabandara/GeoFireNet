@@ -5,8 +5,8 @@ import '../styles/Login.css';
 
 const Login: React.FC = () => {
     const { login } = useAuth();
-    const [email, setEmail] = useState('admin@geofirenet.com');
-    const [password, setPassword] = useState('GeoFireNet123');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +94,7 @@ const Login: React.FC = () => {
                 </form>
 
                 <div className="login-footer">
-                    <p>Demo Mode: admin@geofirenet.com / GeoFireNet123</p>
+                    <p>Authorized operator access only</p>
                 </div>
             </div>
         </div>

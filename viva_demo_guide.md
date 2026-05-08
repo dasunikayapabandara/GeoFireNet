@@ -10,7 +10,7 @@
 
 "GeoFireNet is a modular system composed of three key parts:"
 1.  **Frontend (React + Leaflet)**: The operational dashboard for decision makers. It visualizes risk zones and real-time alerts.
-2.  **Backend (FastAPI + Scikit-Learn)**: The inference engine. It hosts a **Random Forest Regressor** trained on climate data (Temp, Humidity, Wind, Vegetation).
+2.  **Backend (FastAPI + Scikit-Learn)**: The inference engine. It hosts a **RandomForestClassifier** trained on climate data (Temp, Humidity, Wind, Vegetation Moisture).
 3.  **Prototype (Streamlit)**: A data science sandbox used to validate model behavior and test edge cases (e.g., Extreme Drought).
 
 ---
@@ -47,7 +47,7 @@
 **Q: How accurate is your model?**
 > **A**: "On our synthetic test set, the Random Forest achieved ~87% accuracy. However, since we lack real historical fire labels for this specific region, this figure represents its consistency with established fire science rules (e.g., Rothermel's model) rather than field performance."
 
-**Q: Why did you use synthetic/mock data?**
+**Q: Why did you use synthetic training data?**
 > **A**: "Access to real-time aligned satellite feed + ground truth fire history is expensive or restricted. Synthetic data allowed us to validate the **Architecture** and **Pipeline** fully. The system is designed to swap the CSV/GeoJSON input for a real API stream (like NASA FIRMS) without code changes."
 
 **Q: Why Random Forest? Why not Deep Learning?**
@@ -62,7 +62,7 @@
 *If the demo crashes:*
 1.  **Frontend Failed**: Show the **Streamlit Prototype** immediately; it contains all the core logic.
 2.  **Map Blank**: Check internet connection (OpenStreetMap tiles require it).
-3.  **Model Error**: The system falls back to a mathematical formula if `model.pkl` is missing. Explain this as a "Resilience Feature."
+3.  **Model Error**: If `backend/artifacts/model.pkl` is missing, the API reports degraded model health and prediction requests return a clear service error. Retrain with `python -m backend.train_model`.
 
 ---
 **Closing Statement**:

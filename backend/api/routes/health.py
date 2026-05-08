@@ -21,7 +21,13 @@ async def get_db_health(db: Session = Depends(get_db)):
 
 @router.get("/model")
 async def get_model_health(predictor = Depends(get_predictor)):
-    """Diagnostic check confirming the ML inference artifacts are properly loaded and avoiding isolated mock runtimes."""
-    if getattr(predictor, "is_mock", False):
-        return {"status": "degraded", "service": "model", "mocked": True}
-    return {"status": "healthy", "service": "model", "mocked": False}
+    """Diagnostic check confirming the ML inference artifacts are loaded."""
+    model_loaded = getattr(predictor, "model", None) is not None
+    thresholds_loaded = getattr(predictor, "thresholds", None) is not None
+    status = "healthy" if model_loaded and thresholds_loaded else "degraded"
+    return {
+        "status": status,
+        "service": "model",
+        "model_loaded": model_loaded,
+        "thresholds_loaded": thresholds_loaded
+    }

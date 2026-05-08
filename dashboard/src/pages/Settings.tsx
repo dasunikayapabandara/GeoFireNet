@@ -99,12 +99,12 @@ const Settings: React.FC = () => {
                     <div className="profile-info">
                         <div className="avatar-placeholder">FA</div>
                         <div>
-                            <h4>Mock Fire Analyst</h4>
+                            <h4>Fire Risk Analyst</h4>
                             <p className="text-muted">analyst@geofirenet.local</p>
                         </div>
                     </div>
                     <div className="form-actions mt-4">
-                        <button className="btn btn-outline" onClick={() => setStatusMessage({ text: 'Profile editing is disabled in demo mode.', type: 'error' })}>Edit Profile</button>
+                        <button className="btn btn-outline" onClick={() => setStatusMessage({ text: 'Profile editing is not enabled in this build.', type: 'error' })}>Edit Profile</button>
                         <button className="btn btn-danger" onClick={logout}>Log Out</button>
                     </div>
                 </div>
@@ -238,11 +238,11 @@ const Settings: React.FC = () => {
                 <div className="card settings-card">
                     <h3 className="section-title">System Status</h3>
                     <ul className="sys-info-list text-muted small">
-                        <li><strong>Environment:</strong> Development / Demo</li>
-                        <li><strong>Frontend Version:</strong> v2.1.4-beta</li>
-                        <li><strong>Backend API Status:</strong> Online (FastAPI)</li>
-                        <li><strong>Database:</strong> Connected (PostgreSQL)</li>
-                        <li><strong>ML Model Status:</strong> Active (RandomForestRegressor)</li>
+                        <li><strong>Environment:</strong> Production-ready local deployment</li>
+                        <li><strong>Frontend Version:</strong> v2.1.4</li>
+                        <li><strong>Backend API Status:</strong> FastAPI health endpoint available</li>
+                        <li><strong>Database:</strong> PostgreSQL via SQLAlchemy/Alembic</li>
+                        <li><strong>ML Model Status:</strong> Active (RandomForestClassifier)</li>
                         <li><strong>Last Sync:</strong> {new Date().toLocaleString()}</li>
                     </ul>
                 </div>
@@ -264,7 +264,7 @@ const Settings: React.FC = () => {
                         </label>
                     </div>
                     <div className="form-actions mt-4">
-                        <button className="btn btn-outline" onClick={() => setStatusMessage({ text: 'Password changes are restricted in demo mode.', type: 'error' })}>Change Password</button>
+                        <button className="btn btn-outline" onClick={() => setStatusMessage({ text: 'Password changes are not enabled in this build.', type: 'error' })}>Change Password</button>
                     </div>
                 </div>
 

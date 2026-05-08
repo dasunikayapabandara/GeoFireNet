@@ -96,3 +96,6 @@ def get_train_test_splits(df):
     print(f"Test samples: {len(X_test)} (Positive: {y_test.sum()})")
     
     return X_train, X_test, y_train, y_test
+
+if __name__ == "__main__":
+    generate_synthetic_data(save_path=config.DATASET_PATH, seed=config.RANDOM_SEED)

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from backend.services.data_ingestion import fetch_realtime_weather
+from backend.services.data_ingestion import fetch_realtime_weather, _normalize_provider
 from backend.core.logger import logger
 from backend.config import settings
 
@@ -19,7 +19,7 @@ async def get_current_weather(
         return {
             "status": "success",
             "data": weather_data,
-            "provider": settings.WEATHER_API_PROVIDER
+            "provider": _normalize_provider(settings.WEATHER_API_PROVIDER)
         }
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
@@ -30,7 +30,7 @@ async def get_current_weather(
 @router.get("/status")
 async def get_weather_status():
     """Check if weather ingestion is configured correctly."""
-    provider = settings.WEATHER_API_PROVIDER
+    provider = _normalize_provider(settings.WEATHER_API_PROVIDER)
     has_key = bool(settings.WEATHER_API_KEY)
     
     status = "operational"

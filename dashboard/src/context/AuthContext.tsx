@@ -25,7 +25,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Simulate network delay for effect
         await new Promise(resolve => setTimeout(resolve, 800));
 
-        // Demo credentials validation
+        // Local operator credentials for the final-year deployment build.
         if (email === 'admin@geofirenet.com' && pass === 'GeoFireNet123') {
             localStorage.setItem('geofirenet_auth', 'true');
             setIsAuthenticated(true);

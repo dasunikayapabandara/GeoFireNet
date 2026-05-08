@@ -30,7 +30,7 @@ The fundamental justification for GeoFireNet is not just *accuracy*, but **timin
 We explicitly optimized the ML system for **Recall** (Sensitivity) over Precision.
 
 * **Baseline**: Static thresholds. Hard to tune for "Safety First" without causing massive false alarms everywhere.
-* **ML Model**: Tuned via `calibrate_thresholds.py` to achieve **100% Recall** at Threshold 50.
+* **ML Model**: Tuned via `calibrate_thresholds.py` to prioritize near-maximum recall through calibrated probability thresholds.
 * **Result**: The ML model is a "Risk Amplifier" designed to ensure **zero missed detections** of fire events, treating False Positives as an acceptable cost for public safety.
 
 ## 4. Conclusion for Examiners

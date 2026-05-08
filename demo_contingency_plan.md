@@ -7,18 +7,18 @@
 
 **Symptom**: The backend starts, but logs `Warning: model.pkl not found`.
 **Cause**: The binary artifact was not copied to the correct directory or was corrupted.
-**Automatic Behavior**:
+**System Behavior**:
 
-- The system automatically enters **Simulation Mode**.
-- It uses a "Heuristic + Noise" formula to generate realistic-looking risk scores.
-- The API continues to function 100% normally.
+- `/health/model` reports degraded model readiness.
+- `/predict` returns a clear service error instead of fabricating scores.
+- The recovery action is to regenerate the artifact with `python -m backend.train_model`.
 **Examiner Explanation**:
-*"To ensure system resilience in this lightweight demo environment, we are running in 'Architectural Simulation Mode', which mimics the ML model's behavior using a verified heuristic algorithm."*
+*"GeoFireNet does not silently switch to mock predictions. A missing model is treated as a deployment readiness failure so every risk score remains traceable to the trained artifact."*
 
 ## Scenario B: The "Backend Crash"
 
 **Symptom**: The React frontend shows "Network Error" or fails to load data.
-**Fallback Strategy**:
+**Recovery Strategy**:
 
 1. Immediately switch to the **Streamlit Prototype** (`prototype_app`).
 2. Run: `streamlit run prototype_app/app.py`

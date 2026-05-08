@@ -6,8 +6,8 @@ This report details the machine learning evaluation phase for the GeoFireNet sys
 ## 2. Models Evaluated
 We evaluated three different algorithms to ensure the best fit for our data and use case:
 1.  **Logistic Regression**: Used as a linear baseline.
-2.  **Random Forest Regressor/Classifier**: An ensemble method capable of capturing non-linear interactions between variables (e.g., wind amplifying temperature risk).
-3.  **Gradient Boosting Classifier**: Used as an advanced ensemble alternative to Random Forest (acting as the fallback for XGBoost).
+2.  **RandomForestClassifier**: An ensemble method capable of capturing non-linear interactions between variables (e.g., wind amplifying temperature risk).
+3.  **Gradient Boosting Classifier**: Used as an advanced ensemble alternative to Random Forest.
 
 ## 3. Model Comparison
 
@@ -30,7 +30,7 @@ The models were evaluated using the following core metrics. All metrics were eva
 **Random Forest** was selected as the final production model. While Gradient Boosting and Logistic Regression performed competitively, Random Forest achieved the best F1-Score (balance) and the highest baseline Accuracy.
 
 **Safety-First Design (Prioritizing Recall):**
-Although standard threshold (0.5) evaluation yields a Recall of 0.841, the production GeoFireNet system is explicitly calibrated to **Threshold 50**, pushing Recall to **100%**. In the context of wildfire prediction, missing a dangerous condition (False Negative) can result in catastrophic damage, whereas issuing an unnecessary alert (False Positive) merely incurs a minor administrative cost.
+Although standard threshold (0.5) evaluation yields a Recall of 0.841, the production GeoFireNet system uses calibrated probability thresholds from `thresholds.json` to prioritize safety. In the context of wildfire prediction, missing a dangerous condition (False Negative) can result in catastrophic damage, whereas issuing an unnecessary alert (False Positive) merely incurs a minor administrative cost.
 
 ## 5. Confusion Matrix Interpretation (Random Forest at Threshold 0.5)
 

@@ -19,15 +19,15 @@
 
 ## 2. System Integrity Check
 
-- **Model Artifact**: `backend/model.pkl`
-- **Expected Hash**: `e67c0bf04d3dd3f6ccfeaedab4fcae65cecfc593183defc7a493614f101c7945`
-- **Actual Hash**: `e67c0bf04d3dd3f6ccfeaedab4fcae65cecfc593183defc7a493614f101c7945`
+- **Model Artifact**: `backend/artifacts/model.pkl`
+- **Expected Hash**: `94faf67a1e10670b768f96b130db8940ab40037115e65e01f95628cfd5889e44`
+- **Actual Hash**: `94faf67a1e10670b768f96b130db8940ab40037115e65e01f95628cfd5889e44`
 - **Result**: **PASS** (Bit-perfect match).
 
 ## 3. Defense Readiness
 
 - **Logic Defense**: The "Accuracy Parity" argument is documented.
-- **Safety Defense**: The "Recall Dominance" (Threshold 50) strategy is documented.
+- **Safety Defense**: The recall-prioritized calibrated threshold strategy is documented.
 - **Demo Resilience**: "Safe Mode" and "Clamping" logic are implemented and tested.
 
 ## 4. Final Recommendation

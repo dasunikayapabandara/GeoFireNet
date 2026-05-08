@@ -16,8 +16,8 @@ import {
     ArcElement,
     Filler
 } from 'chart.js';
-import { Doughnut } from 'react-chartjs-2';
-import { RiskService } from '../services/RiskService';
+import { Doughnut, Line } from 'react-chartjs-2';
+import { RiskService, type Alert, type RiskChartData } from '../services/RiskService';
 import '../styles/Analytics.css';
 
 ChartJS.register(
@@ -63,17 +63,27 @@ const Analytics: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [summary, setSummary] = useState<any>(null);
     const [alertsSummary, setAlertsSummary] = useState<any>(null);
+    const [trendData, setTrendData] = useState<RiskChartData | null>(null);
+    const [history, setHistory] = useState<any[]>([]);
+    const [recentAlerts, setRecentAlerts] = useState<Alert[]>([]);
 
     const fetchData = async () => {
         setLoading(true);
         setError(null);
         try {
-            const [summaryData, alertsSum] = await Promise.all([
+            const query = { country: region || undefined };
+            const [summaryData, alertsSum, trend, historyData, alerts] = await Promise.all([
                 RiskService.getGlobalSummary({ country: region || undefined }),
-                RiskService.getAlertsSummary()
+                RiskService.getAlertsSummary(),
+                RiskService.getRiskTrend(query),
+                RiskService.getHistory(query),
+                RiskService.getAlerts(query)
             ]);
             setSummary(summaryData);
             setAlertsSummary(alertsSum);
+            setTrendData(trend);
+            setHistory(historyData);
+            setRecentAlerts(alerts.slice(0, 5));
         } catch (err) {
             setError("Failed to fetch analytics from backend.");
             console.error(err);
@@ -125,6 +135,20 @@ const Analytics: React.FC = () => {
             activeAlerts: alertsSummary.active_total.toString()
         };
     }, [summary, alertsSummary]);
+
+    const driverCounts = useMemo(() => {
+        const counts = new globalThis.Map<string, number>();
+        history.forEach(item => {
+            const drivers = (item.primary_drivers || '')
+                .split(',')
+                .map((driver: string) => driver.trim())
+                .filter(Boolean);
+            drivers.forEach((driver: string) => counts.set(driver, (counts.get(driver) || 0) + 1));
+        });
+        return Array.from(counts.entries() as IterableIterator<[string, number]>)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4);
+    }, [history]);
 
     if (loading) return <div className="analytics-container flex-center"><h3>Loading Neural Intelligence...</h3></div>;
     if (error) return <div className="analytics-container flex-center"><div className="settings-alert error">{error}</div></div>;
@@ -184,9 +208,15 @@ const Analytics: React.FC = () => {
                     <div className="chart-header">
                         <TrendingUp size={20} color="var(--accent-primary)" /> Risk Trend Over Time
                     </div>
-                    <div className="pending-overlay">
-                        <TrendingUp size={48} className="pending-icon" />
-                        <p>Temporal Aggregation Pending Backend Integration</p>
+                    <div className="chart-container">
+                        {trendData && trendData.labels.length > 0 ? (
+                            <Line data={trendData} options={chartOptions} />
+                        ) : (
+                            <div className="pending-overlay">
+                                <TrendingUp size={48} className="pending-icon" />
+                                <p>No prediction history available for the selected scope.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="chart-card">
@@ -204,22 +234,44 @@ const Analytics: React.FC = () => {
                     <div className="chart-header"><Map size={20} color="var(--accent-primary)" /> Regional Distribution</div>
                     <div className="pending-overlay">
                         <Map size={32} className="pending-icon" />
-                        <p>Spatial Grouping Pending</p>
+                        <p>Use the map page for live prediction-zone visualization.</p>
                     </div>
                 </div>
                 <div className="chart-card">
                     <div className="chart-header"><ThermometerSun size={20} color="var(--accent-risk-high)" /> Top Risk Drivers</div>
-                    <div className="pending-overlay">
-                        <Wind size={32} className="pending-icon" />
-                        <p>Driver Correlation API Pending</p>
-                    </div>
+                    {driverCounts.length > 0 ? (
+                        <div style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
+                            {driverCounts.map(([driver, count]) => (
+                                <div key={driver} style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-primary)' }}>
+                                    <span><Wind size={14} /> {driver}</span>
+                                    <strong>{count}</strong>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="pending-overlay">
+                            <Wind size={32} className="pending-icon" />
+                            <p>No driver records available yet.</p>
+                        </div>
+                    )}
                 </div>
                 <div className="chart-card">
                     <div className="chart-header"><AlertTriangle size={20} color="var(--accent-risk-extreme)" /> Recent Alerts Feed</div>
-                    <div className="pending-overlay">
-                        <AlertTriangle size={32} className="pending-icon" />
-                        <p>Stream Integration Pending</p>
-                    </div>
+                    {recentAlerts.length > 0 ? (
+                        <div style={{ padding: '1rem', display: 'grid', gap: '0.75rem' }}>
+                            {recentAlerts.map(alert => (
+                                <div key={alert.id} style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                                    <strong>{alert.title}</strong>
+                                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{alert.region}, {alert.country} • {alert.status}</p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="pending-overlay">
+                            <AlertTriangle size={32} className="pending-icon" />
+                            <p>No alerts generated for the selected scope.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

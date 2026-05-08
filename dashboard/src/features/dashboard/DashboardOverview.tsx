@@ -116,7 +116,7 @@ const DashboardOverview: React.FC = () => {
                     {chartData?.labels.length === 0 ? (
                         <div className="empty-state-placeholder" style={{ height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
                             <Activity size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                            <p>Temporal Analysis Pending Backend Integration</p>
+                            <p>No prediction history available for trend analysis yet.</p>
                         </div>
                     ) : (
                         <RiskChart data={chartData} />

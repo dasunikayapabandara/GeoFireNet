@@ -28,15 +28,15 @@
 
 ## Chapter 4: Methodology
 
-* **4.1 Data Generation**: Justification for using 2000 synthetic samples based on California summer climate profiles to train the model (`experiment_traceability.md`).
-* **4.2 Model Selection**: Rationale for choosing **Random Forest Regressor** (handling non-linear interactions) over simple Linear Regression.
+* **4.1 Data Generation**: Justification for using 3000 synthetic samples based on California summer climate profiles to train the model (`experiment_traceability.md`).
+* **4.2 Model Selection**: Rationale for choosing **RandomForestClassifier** (handling non-linear interactions and probability output) over simpler linear classifiers.
 * **4.3 Training Process**: Details of the training pipeline (`train_model.py`) and artifact freezing (`model_provenance.md`).
 * **4.4 Safety Engineering**: Implementation of "Soft Enforcement" (clamping) for input robustness.
 
 ## Chapter 5: Evaluation & Results
 
 * **5.1 Metrics Selection**: Justification for prioritizing **Recall** over Precision (Safety-First logic).
-* **5.2 Threshold Calibration**: Analysis from `calibrate_thresholds.py` showing why **Threshold 50** was chosen (100% Recall) despite lower F1-score than Threshold 60.
+* **5.2 Threshold Calibration**: Analysis from `calibrate_thresholds.py` showing how calibrated probability thresholds prioritize recall for safety-critical wildfire screening.
 * **5.3 Comparative Analysis**: Quantitative and qualitative comparison showing where ML outperforms the Baseline (Extreme Heat + Wind scenarios).
 
 ## Chapter 6: Conclusion & Future Work

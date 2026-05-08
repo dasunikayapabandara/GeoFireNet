@@ -18,8 +18,10 @@ def test_health_check_db():
 def test_health_check_model():
     response = client.get("/health/model")
     assert response.status_code == 200
-    assert response.json()["service"] == "model"
-    assert "mocked" in response.json()
+    data = response.json()
+    assert data["service"] == "model"
+    assert "model_loaded" in data
+    assert "thresholds_loaded" in data
 
 def test_system_status():
     response = client.get("/system/status")

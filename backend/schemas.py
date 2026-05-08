@@ -166,6 +166,7 @@ class Alert(AlertBase):
     updated_at: datetime
     
     location: Optional[Location] = None
+    weather_input: Optional[WeatherInput] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -228,4 +229,3 @@ class ActiveDetectionLog(ActiveDetectionLogBase):
     location: Optional[Location] = None
     
     model_config = ConfigDict(from_attributes=True)
-

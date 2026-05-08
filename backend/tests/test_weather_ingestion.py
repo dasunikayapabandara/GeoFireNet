@@ -17,27 +17,36 @@ def test_weather_status():
     if data["provider"] == "open-meteo":
         assert data["status"] == "operational"
 
-def test_weather_current_open_meteo():
-    """Test the real-time weather fetch using Open-Meteo (default, no key)."""
+def test_weather_current_open_meteo(monkeypatch):
+    """Test the weather endpoint contract without relying on external network access."""
+    from backend.api.routes import weather as weather_route
+
+    async def fake_weather(lat: float, lon: float):
+        return {
+            "temp": 24.5,
+            "humidity": 41.0,
+            "wind": 12.0,
+            "veg_moisture": 0.34,
+            "provider": "open-meteo",
+            "timestamp": "2026-05-08T00:00:00+00:00"
+        }
+
+    monkeypatch.setattr(weather_route, "fetch_realtime_weather", fake_weather)
+
     # Use Napa Valley coordinates
     lat, lon = 38.5, -122.3
     response = client.get(f"/weather/current?lat={lat}&lon={lon}")
     
-    # If the network is available, this should succeed. 
-    # If not, it will return 503 (Service Unavailable) because of our RuntimeError mapping.
-    if response.status_code == 200:
-        data = response.json()
-        assert data["status"] == "success"
-        weather = data["data"]
-        assert "temp" in weather
-        assert "humidity" in weather
-        assert "wind" in weather
-        assert "veg_moisture" in weather
-        assert 0 <= weather["humidity"] <= 100
-        assert 0 <= weather["veg_moisture"] <= 1
-    else:
-        assert response.status_code == 503
-        assert "Unable to reach external weather API" in response.json()["detail"]
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "success"
+    weather = data["data"]
+    assert "temp" in weather
+    assert "humidity" in weather
+    assert "wind" in weather
+    assert "veg_moisture" in weather
+    assert 0 <= weather["humidity"] <= 100
+    assert 0 <= weather["veg_moisture"] <= 1
 
 def test_weather_config_validation():
     """Ensure that selecting open-weather without a key returns not_configured."""

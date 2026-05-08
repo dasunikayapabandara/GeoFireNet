@@ -19,8 +19,8 @@ def test_wildfire_feature_clamping():
     assert features_cold.wind == 0.0
     assert features_cold.veg_moisture == 0.0
 
-def test_risk_level_mapping_fallback():
-    """Test the basic fallback risk level mapping logic."""
+def test_risk_level_mapping_with_loaded_thresholds():
+    """Test the risk level mapping logic with explicit calibrated thresholds."""
     from backend.services.prediction_service import RiskPredictor
     
     # We test the predictor mapping assuming default thresholds

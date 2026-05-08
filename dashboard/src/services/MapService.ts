@@ -20,12 +20,40 @@ export interface RiskGeoJSON {
 
 export const MapService = {
     getRiskZones: async (): Promise<RiskGeoJSON> => {
-        // This endpoint is not yet implemented in the backend.
-        // Returning empty collection to trigger clean "No data" or "Pending" state.
-        console.warn("MapService.getRiskZones: Backend endpoint not implemented. GIS integration pending.");
+        const response = await fetch('http://localhost:8000/history?limit=50');
+        if (!response.ok) throw new Error('Failed to fetch prediction history for map zones');
+        const history = await response.json();
+        const features = history
+            .filter((item: any) => item.location?.latitude != null && item.location?.longitude != null)
+            .map((item: any): RiskZoneFeature => {
+                const lat = Number(item.location.latitude);
+                const lon = Number(item.location.longitude);
+                const delta = 0.08;
+                return {
+                    type: 'Feature',
+                    properties: {
+                        id: item.id.toString(),
+                        name: item.location.admin_region || item.location.name || 'Prediction Zone',
+                        riskLevel: item.risk_level.toLowerCase() as RiskZoneFeature['properties']['riskLevel'],
+                        temperature: item.weather_input?.temp ?? 0,
+                        humidity: item.weather_input?.humidity ?? 0
+                    },
+                    geometry: {
+                        type: 'Polygon',
+                        coordinates: [[
+                            [lon - delta, lat + delta],
+                            [lon + delta, lat + delta],
+                            [lon + delta, lat - delta],
+                            [lon - delta, lat - delta],
+                            [lon - delta, lat + delta]
+                        ]]
+                    }
+                };
+            });
+
         return {
             type: 'FeatureCollection',
-            features: []
+            features
         };
     }
 };
