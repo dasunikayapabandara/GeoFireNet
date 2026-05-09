@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Clock } from 'lucide-react';
-import { RiskService } from '../services/RiskService';
+import { RiskService, type HistoryRecord } from '../services/RiskService';
 
 const History: React.FC = () => {
-    const [history, setHistory] = useState<any[]>([]);
+    const [history, setHistory] = useState<HistoryRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

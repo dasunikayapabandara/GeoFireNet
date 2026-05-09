@@ -3,34 +3,49 @@ import {
     BellRing, AlertOctagon, CheckCircle2, ShieldAlert,
     Map, X, ThermometerSun, Wind, Droplets, Leaf
 } from 'lucide-react';
-import { RiskService } from '../services/RiskService';
+import { RiskService, type Alert, type AlertSeverity, type AlertStatus, type AlertsSummary } from '../services/RiskService';
 import '../styles/Alerts.css';
 
+const emptySummary: AlertsSummary = {
+    active_total: 0,
+    active_extreme: 0,
+    active_high: 0,
+    generated_today: 0
+};
+
 const Alerts: React.FC = () => {
-    const [alerts, setAlerts] = useState<any[]>([]);
-    const [summary, setSummary] = useState<any>({ active_total: 0, active_extreme: 0, active_high: 0, generated_today: 0 });
+    const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [summary, setSummary] = useState<AlertsSummary>(emptySummary);
     const [loading, setLoading] = useState(true);
-    const [levelFilter, setLevelFilter] = useState('');
-    const [statusFilter, setStatusFilter] = useState('active');
+    const [levelFilter, setLevelFilter] = useState<AlertSeverity | ''>('');
+    const [statusFilter, setStatusFilter] = useState<AlertStatus | ''>('active');
     const [regionFilter, setRegionFilter] = useState('');
 
     // Modal Details State
-    const [selectedAlert, setSelectedAlert] = useState<any | null>(null);
+    const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
-        const data = await RiskService.getAlerts({ country: regionFilter || undefined });
-        const sumData = await RiskService.getAlertsSummary();
+        const query = { country: regionFilter || undefined };
+        const data = await RiskService.getAlerts(query);
+        const sumData = await RiskService.getAlertsSummary(query);
         setAlerts(data);
         setSummary(sumData);
         setLoading(false);
     }, [regionFilter]);
 
     useEffect(() => {
-        fetchData();
+        const initialFetch = window.setTimeout(() => {
+            void fetchData();
+        }, 0);
         // Polling complements WebSocket notifications and keeps filtered views current.
-        const interval = setInterval(fetchData, 10000);
-        return () => clearInterval(interval);
+        const interval = window.setInterval(() => {
+            void fetchData();
+        }, 10000);
+        return () => {
+            window.clearTimeout(initialFetch);
+            window.clearInterval(interval);
+        };
     }, [fetchData]);
 
     // Filter Logic
@@ -46,14 +61,12 @@ const Alerts: React.FC = () => {
         const success = await RiskService.resolveAlert(id);
         if (success) {
             setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'resolved' } : a));
-            if (selectedAlert && selectedAlert.id === id) {
-                setSelectedAlert({ ...selectedAlert, status: 'resolved' });
-            }
-            fetchData();
+            setSelectedAlert(prev => prev && prev.id === id ? { ...prev, status: 'resolved' } : prev);
+            void fetchData();
         }
     };
 
-    const getIconForLevel = (level: string) => {
+    const getIconForLevel = (level: AlertSeverity) => {
         switch (level) {
             case 'extreme': return <ShieldAlert size={24} color="var(--accent-risk-extreme)" />;
             case 'high': return <AlertOctagon size={24} color="var(--accent-risk-high)" />;
@@ -94,7 +107,7 @@ const Alerts: React.FC = () => {
             <div className="alerts-filter-bar">
                 <div className="alerts-filter-group">
                     <ShieldAlert size={18} color="var(--text-secondary)" />
-                    <select title="Severity Filter" value={levelFilter} onChange={e => setLevelFilter(e.target.value)}>
+                    <select title="Severity Filter" value={levelFilter} onChange={e => setLevelFilter(e.target.value as AlertSeverity | '')}>
                         <option value="">All Severities</option>
                         <option value="extreme">Extreme</option>
                         <option value="high">High</option>
@@ -103,7 +116,7 @@ const Alerts: React.FC = () => {
                 </div>
                 <div className="alerts-filter-group">
                     <CheckCircle2 size={18} color="var(--text-secondary)" />
-                    <select title="Status Filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                    <select title="Status Filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value as AlertStatus | '')}>
                         <option value="">All Statuses</option>
                         <option value="active">Active</option>
                         <option value="resolved">Resolved</option>

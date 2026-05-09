@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Flame, TrendingUp, AlertOctagon, Activity,
     Map, Filter, ThermometerSun, Wind, AlertTriangle, ArrowUpRight
@@ -17,7 +17,14 @@ import {
     Filler
 } from 'chart.js';
 import { Doughnut, Line } from 'react-chartjs-2';
-import { RiskService, type Alert, type RiskChartData } from '../services/RiskService';
+import {
+    RiskService,
+    type Alert,
+    type AlertsSummary,
+    type GlobalSummary,
+    type HistoryRecord,
+    type RiskChartData
+} from '../services/RiskService';
 import '../styles/Analytics.css';
 
 ChartJS.register(
@@ -61,20 +68,21 @@ const Analytics: React.FC = () => {
     const [region, setRegion] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [summary, setSummary] = useState<any>(null);
-    const [alertsSummary, setAlertsSummary] = useState<any>(null);
+    const [summary, setSummary] = useState<GlobalSummary | null>(null);
+    const [alertsSummary, setAlertsSummary] = useState<AlertsSummary | null>(null);
     const [trendData, setTrendData] = useState<RiskChartData | null>(null);
-    const [history, setHistory] = useState<any[]>([]);
+    const [history, setHistory] = useState<HistoryRecord[]>([]);
     const [recentAlerts, setRecentAlerts] = useState<Alert[]>([]);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
+            void timeRange;
             const query = { country: region || undefined };
             const [summaryData, alertsSum, trend, historyData, alerts] = await Promise.all([
                 RiskService.getGlobalSummary({ country: region || undefined }),
-                RiskService.getAlertsSummary(),
+                RiskService.getAlertsSummary(query),
                 RiskService.getRiskTrend(query),
                 RiskService.getHistory(query),
                 RiskService.getAlerts(query)
@@ -90,17 +98,20 @@ const Analytics: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [region, timeRange]);
 
     useEffect(() => {
-        fetchData();
-    }, [region, timeRange]);
+        const initialFetch = window.setTimeout(() => {
+            void fetchData();
+        }, 0);
+        return () => window.clearTimeout(initialFetch);
+    }, [fetchData]);
 
     const distData = useMemo(() => {
         if (!summary) return null;
         const levels = ['Low', 'Moderate', 'High', 'Extreme'];
         const data = levels.map(level => {
-            const found = summary.predictions_summary.find((r: any) => r.level === level);
+            const found = summary.predictions_summary.find((r) => r.level === level);
             return found ? found.count : 0;
         });
 
@@ -117,14 +128,14 @@ const Analytics: React.FC = () => {
     const kpis = useMemo(() => {
         if (!summary || !alertsSummary) return { predictions: '0', avgRisk: '0', extremeCount: '0', activeAlerts: '0' };
         
-        const totalPredictions = summary.predictions_summary.reduce((acc: number, curr: any) => acc + curr.count, 0);
+        const totalPredictions = summary.predictions_summary.reduce((acc, curr) => acc + curr.count, 0);
         const extremeCount = summary.predictions_summary
-            .filter((r: any) => r.level === 'Extreme')
-            .reduce((acc: number, curr: any) => acc + curr.count, 0);
+            .filter((r) => r.level === 'Extreme')
+            .reduce((acc, curr) => acc + curr.count, 0);
         
         const highExtreme = summary.predictions_summary
-            .filter((r: any) => r.level === 'High' || r.level === 'Extreme')
-            .reduce((acc: number, curr: any) => acc + curr.count, 0);
+            .filter((r) => r.level === 'High' || r.level === 'Extreme')
+            .reduce((acc, curr) => acc + curr.count, 0);
         
         const avgRisk = totalPredictions > 0 ? Math.round((highExtreme / totalPredictions) * 100) : 0;
 
@@ -139,13 +150,13 @@ const Analytics: React.FC = () => {
     const driverCounts = useMemo(() => {
         const counts = new globalThis.Map<string, number>();
         history.forEach(item => {
-            const drivers = (item.primary_drivers || '')
+            const drivers = (item.primary_drivers ?? '')
                 .split(',')
                 .map((driver: string) => driver.trim())
                 .filter(Boolean);
             drivers.forEach((driver: string) => counts.set(driver, (counts.get(driver) || 0) + 1));
         });
-        return Array.from(counts.entries() as IterableIterator<[string, number]>)
+        return Array.from(counts.entries())
             .sort((a, b) => b[1] - a[1])
             .slice(0, 4);
     }, [history]);

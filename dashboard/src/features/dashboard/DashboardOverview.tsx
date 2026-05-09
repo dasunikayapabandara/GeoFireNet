@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import RiskCard from './RiskCard';
 import RiskChart from './RiskChart';
 import { AlertCircle, RefreshCw, Activity } from 'lucide-react';
@@ -20,7 +20,7 @@ const DashboardOverview: React.FC = () => {
     const [countryFilter, setCountryFilter] = useState<string>('');
     const [viewMode, setViewMode] = useState<'predictive' | 'active'>('predictive');
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
         
@@ -56,18 +56,25 @@ const DashboardOverview: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [countryFilter]);
 
     useEffect(() => {
         // Clear old data when filters change to prevent stale views
-        setMetrics([]);
-        setAlerts([]);
-        setChartData(undefined);
+        const initialFetch = window.setTimeout(() => {
+            setMetrics([]);
+            setAlerts([]);
+            setChartData(undefined);
+            void fetchData();
+        }, 0);
         
-        fetchData();
-        const interval = setInterval(fetchData, 30000); // Auto-refresh every 30s
-        return () => clearInterval(interval);
-    }, [countryFilter, viewMode]);
+        const interval = window.setInterval(() => {
+            void fetchData();
+        }, 30000); // Auto-refresh every 30s
+        return () => {
+            window.clearTimeout(initialFetch);
+            window.clearInterval(interval);
+        };
+    }, [fetchData]);
 
     if (loading && metrics.length === 0) {
         return <div className="dashboard-container flex-center">

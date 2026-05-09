@@ -12,7 +12,7 @@ import About from './pages/About';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import RealTimeToast from './components/RealTimeToast';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
 import './styles/App.css';
 
 import Footer from './components/Footer';
@@ -29,7 +29,7 @@ function App() {
         if (JSON.parse(stored).theme === 'light') {
           document.documentElement.classList.add('light-theme');
         }
-      } catch (e) {
+      } catch {
         // ignored
       }
     }

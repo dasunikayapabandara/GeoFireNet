@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Flame, Bell, User, ChevronDown } from 'lucide-react';
 import '../styles/Header.css';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTab }) => {
     const { logout } = useAuth();

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import React, { useState } from 'react';
+import { useAuth } from '../context/useAuth';
 import '../styles/Settings.css';
 
 interface SettingsState {
@@ -30,24 +30,24 @@ const defaultSettings: SettingsState = {
     stayLoggedIn: true,
 };
 
+const loadStoredSettings = (): SettingsState => {
+    const stored = localStorage.getItem('geofirenet_settings');
+    if (!stored) return defaultSettings;
+
+    try {
+        return { ...defaultSettings, ...JSON.parse(stored) as Partial<SettingsState> };
+    } catch (error) {
+        console.error("Failed to parse settings", error);
+        return defaultSettings;
+    }
+};
+
 const Settings: React.FC = () => {
     const { logout } = useAuth();
-    const [settings, setSettings] = useState<SettingsState>(defaultSettings);
+    const [settings, setSettings] = useState<SettingsState>(loadStoredSettings);
     const [statusMessage, setStatusMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
-    // Load from localStorage on mount
-    useEffect(() => {
-        const stored = localStorage.getItem('geofirenet_settings');
-        if (stored) {
-            try {
-                setSettings({ ...defaultSettings, ...JSON.parse(stored) });
-            } catch (e) {
-                console.error("Failed to parse settings", e);
-            }
-        }
-    }, []);
-
-    const handleChange = (key: keyof SettingsState, value: any) => {
+    const handleChange = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
 
@@ -61,7 +61,7 @@ const Settings: React.FC = () => {
 
             setStatusMessage({ text: 'Settings saved successfully!', type: 'success' });
             setTimeout(() => setStatusMessage(null), 3000);
-        } catch (e) {
+        } catch {
             setStatusMessage({ text: 'Failed to save settings.', type: 'error' });
         }
     };
@@ -117,7 +117,7 @@ const Settings: React.FC = () => {
                         <label>Color Theme</label>
                         <select
                             value={settings.theme}
-                            onChange={(e) => handleChange('theme', e.target.value)}
+                            onChange={(e) => handleChange('theme', e.target.value as SettingsState['theme'])}
                         >
                             <option value="dark">Dark Theme (Default)</option>
                             <option value="light">Light Theme (Preview)</option>
