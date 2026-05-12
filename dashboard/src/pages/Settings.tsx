@@ -224,10 +224,9 @@ const Settings: React.FC = () => {
                             value={settings.preferredRegion}
                             onChange={(e) => handleChange('preferredRegion', e.target.value)}
                         >
-                            <option value="Global">Global All</option>
-                            <option value="USA">USA</option>
+                            <option value="Global">Project Scope (USA + Australia)</option>
+                            <option value="USA">United States</option>
                             <option value="Australia">Australia</option>
-                            <option value="Europe">Europe</option>
                         </select>
                     </div>
 

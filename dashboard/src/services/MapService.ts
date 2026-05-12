@@ -2,6 +2,13 @@ import { fetchJson } from '../config/api';
 import type { HistoryRecord } from './RiskService';
 
 export type RiskLevel = 'low' | 'moderate' | 'high' | 'extreme';
+export type ProjectCountry = 'USA' | 'Australia';
+export type MapLayerMode = 'predictive' | 'active';
+
+export interface RiskZoneQuery {
+    country?: string;
+    mode?: MapLayerMode;
+}
 
 export interface RiskZoneFeature {
     type: 'Feature';
@@ -31,7 +38,7 @@ export interface RiskGeoJSON {
 interface StaticWildfireRegion {
     id: string;
     name: string;
-    country: 'USA' | 'Australia';
+    country: ProjectCountry;
     regionType: string;
     latitude: number;
     longitude: number;
@@ -160,14 +167,33 @@ const regionalAlertFeatures = [
     ...AUSTRALIA_WILDFIRE_ALERT_REGIONS
 ].map(toRegionalAlertFeature);
 
+const projectCountries = new Set<string>(['USA', 'Australia']);
+
+const matchesCountry = (feature: RiskZoneFeature, country?: string) =>
+    !country || feature.properties.country === country;
+
+const matchesMode = (feature: RiskZoneFeature, mode: MapLayerMode = 'predictive') =>
+    mode === 'predictive' || feature.properties.riskLevel === 'high' || feature.properties.riskLevel === 'extreme';
+
+const isProjectCountry = (country?: string | null) => Boolean(country && projectCountries.has(country));
+
+export const getRegionalAlertFeatures = (query?: RiskZoneQuery) =>
+    regionalAlertFeatures.filter((feature) =>
+        matchesCountry(feature, query?.country) && matchesMode(feature, query?.mode)
+    );
+
 export const MapService = {
-    getRiskZones: async (): Promise<RiskGeoJSON> => {
+    getRiskZones: async (query?: RiskZoneQuery): Promise<RiskGeoJSON> => {
         let historyFeatures: RiskZoneFeature[] = [];
 
         try {
             const history = await fetchJson<HistoryRecord[]>('/history?limit=50');
             historyFeatures = history
                 .filter(hasMappedLocation)
+                .filter((item) => query?.country
+                    ? item.location.country === query.country
+                    : isProjectCountry(item.location.country)
+                )
                 .map((item): RiskZoneFeature => {
                     const location = item.location;
                     const lat = Number(location.latitude);
@@ -193,14 +219,15 @@ export const MapService = {
                             coordinates: [lon, lat]
                         }
                     };
-                });
+                })
+                .filter((feature) => matchesMode(feature, query?.mode));
         } catch (error) {
             console.warn('Unable to load prediction history for map. Showing regional wildfire alert layer.', error);
         }
 
         return {
             type: 'FeatureCollection',
-            features: [...regionalAlertFeatures, ...historyFeatures]
+            features: [...getRegionalAlertFeatures(query), ...historyFeatures]
         };
     }
 };

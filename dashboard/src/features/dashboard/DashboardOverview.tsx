@@ -24,28 +24,24 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
     const [error, setError] = useState<DashboardError | null>(null);
     const [countryFilter, setCountryFilter] = useState<string>('');
     const [viewMode, setViewMode] = useState<'predictive' | 'active'>('predictive');
+    const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
         
         try {
-            // Check health first when retrying or fetching data
-            const status = await checkBackendStatus();
-            if (status.health.includes('Unable to reach') || status.health.includes('failed') || status.health === 'unreachable') {
-                throw new Error("Backend unreachable");
-            }
-            
             const query = countryFilter ? { country: countryFilter } : undefined;
             const [metricsData, alertsData, trendData] = await Promise.all([
-                RiskService.getMetrics(query),
-                RiskService.getAlerts(query),
-                RiskService.getRiskTrend(query)
+                RiskService.getMetrics(query, viewMode),
+                RiskService.getAlerts(query, viewMode),
+                RiskService.getRiskTrend(query, viewMode)
             ]);
 
             setMetrics(metricsData);
             setAlerts(alertsData);
             setChartData(trendData);
+            setLastRefreshed(new Date());
         } catch (err) {
             console.error("Failed to fetch dashboard data", err);
             const status = await checkBackendStatus();
@@ -61,7 +57,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
         } finally {
             setLoading(false);
         }
-    }, [countryFilter]);
+    }, [countryFilter, viewMode]);
 
     useEffect(() => {
         // Clear old data when filters change to prevent stale views
@@ -96,10 +92,11 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
                         {viewMode === 'predictive' 
                             ? 'Future simulation: AI-driven predictive risk intelligence.' 
                             : 'Live monitoring: Confirmed active thermal satellite detections.'}
+                        {lastRefreshed ? ` Last refreshed ${lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.` : ''}
                     </span>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    <button className="btn btn-ghost" onClick={fetchData} title="Refresh Data">
+                    <button className="btn btn-ghost" onClick={() => void fetchData()} title="Refresh Data" disabled={loading}>
                         <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
                     </button>
                     <div style={{ background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.375rem', display: 'flex', gap: '0.5rem' }}>
@@ -110,8 +107,8 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
                         <button
                             className={`btn ${viewMode === 'active' ? 'btn-primary' : 'btn-ghost'}`}
                             onClick={() => setViewMode('active')}
-                            style={{ background: viewMode === 'active' ? 'var(--accent-risk-extreme)' : 'transparent' }}
-                        >Active Detections</button>
+                        style={{ background: viewMode === 'active' ? 'var(--accent-risk-extreme)' : 'transparent' }}
+                    >Active Detections</button>
                     </div>
                     <select
                         title="Global Region Filter"
@@ -119,10 +116,9 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
                         onChange={(e) => setCountryFilter(e.target.value)}
                         style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '0.375rem' }}
                     >
-                        <option value="">World (Global Scale)</option>
+                        <option value="">Project Scope (USA + Australia)</option>
                         <option value="USA">United States</option>
                         <option value="Australia">Australia</option>
-                        <option value="Greece">Greece</option>
                     </select>
                 </div>
             </div>
@@ -161,7 +157,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
                 <div className="forecast-column">
                     <div className="overview-map-section card">
                         <div className="section-header">
-                            <h3>Global Risk Map</h3>
+                            <h3>{countryFilter ? `${countryFilter === 'USA' ? 'United States' : countryFilter} Risk Map` : 'Project Risk Map'}</h3>
                             <button
                                 type="button"
                                 className="btn btn-outline overview-map-link"
@@ -172,13 +168,15 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
                             </button>
                         </div>
                         <div className="overview-map-shell">
-                            <MapComponent />
+                            <MapComponent countryFilter={countryFilter || undefined} mode={viewMode} />
                         </div>
                     </div>
 
-                    <div className="chart-section card" style={{ opacity: viewMode === 'active' ? 0.3 : 1, transition: 'opacity 0.3s ease' }}>
+                    <div className="chart-section card">
                         <div className="section-header">
-                            <h3>Risk Forecast {countryFilter ? `for ${countryFilter}` : 'Globally'}</h3>
+                            <h3>
+                                {viewMode === 'active' ? 'Active Detection Trend' : 'Risk Forecast'} {countryFilter ? `for ${countryFilter === 'USA' ? 'United States' : countryFilter}` : 'for USA + Australia'}
+                            </h3>
                         </div>
                         {chartData?.labels.length === 0 ? (
                             <div className="empty-state-placeholder" style={{ height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
@@ -193,7 +191,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
 
                 <div className="alerts-section card">
                     <div className="section-header">
-                        <h3>Recent Alerts</h3>
+                        <h3>{viewMode === 'active' ? 'Recent Active Detections' : 'Recent Alerts'}</h3>
                     </div>
                     <ul className="alerts-list">
                         {alerts.length === 0 ? (

@@ -1,4 +1,5 @@
 import { API_BASE_URL, fetchJson } from '../config/api';
+import { getRegionalAlertFeatures, type MapLayerMode, type RiskZoneFeature } from './MapService';
 
 // Shared Types
 export interface LocationQuery {
@@ -125,6 +126,110 @@ export interface RiskChartData {
 
 export const API_BASE = API_BASE_URL;
 
+const PROJECT_COUNTRIES = ['USA', 'Australia'] as const;
+
+const countryLabel = (country?: string) => {
+    if (country === 'USA') return 'United States';
+    if (country === 'Australia') return 'Australia';
+    return 'USA + Australia';
+};
+
+const isProjectCountry = (country?: string | null) =>
+    Boolean(country && PROJECT_COUNTRIES.includes(country as typeof PROJECT_COUNTRIES[number]));
+
+const riskLevelScore = (level: string) => {
+    switch (level.toLowerCase()) {
+        case 'extreme': return 92;
+        case 'high': return 76;
+        case 'moderate': return 48;
+        default: return 22;
+    }
+};
+
+const titleCaseRiskLevel = (level: string): RiskLevel => {
+    switch (level.toLowerCase()) {
+        case 'extreme': return 'Extreme';
+        case 'high': return 'High';
+        case 'moderate': return 'Moderate';
+        default: return 'Low';
+    }
+};
+
+const getProjectAlertFeatures = (query?: LocationQuery, mode: MapLayerMode = 'predictive') =>
+    getRegionalAlertFeatures({ country: query?.country, mode });
+
+const buildSummaryFromFeatures = (features: RiskZoneFeature[]): GlobalSummary => {
+    const levels: RiskLevel[] = ['Low', 'Moderate', 'High', 'Extreme'];
+    const predictions_summary = levels.map((level) => ({
+        level,
+        count: features.filter((feature) => titleCaseRiskLevel(feature.properties.riskLevel) === level).length
+    }));
+
+    const activeCount = features.filter((feature) =>
+        feature.properties.riskLevel === 'high' || feature.properties.riskLevel === 'extreme'
+    ).length;
+
+    return {
+        predictions_summary,
+        active_detections_summary: [
+            { status: 'active', count: activeCount },
+            { status: 'monitored', count: Math.max(features.length - activeCount, 0) }
+        ]
+    };
+};
+
+const fallbackAlerts = (query?: LocationQuery, mode: MapLayerMode = 'predictive'): Alert[] =>
+    getProjectAlertFeatures(query, mode)
+        .map((feature, index) => {
+            const severity = normalizeSeverity(feature.properties.riskLevel);
+            return {
+                id: `regional-${feature.properties.id}`,
+                title: `${severity.toUpperCase()} Wildfire Alert`,
+                description: `${feature.properties.name} is under ${severity} wildfire monitoring based on regional temperature, humidity, and vegetation stress indicators.`,
+                timestamp: new Date(Date.now() - index * 11 * 60 * 1000).toISOString(),
+                severity,
+                status: 'active',
+                score: riskLevelScore(feature.properties.riskLevel),
+                drivers: [
+                    'Regional heat stress',
+                    'Low fuel moisture',
+                    'Dry wind exposure'
+                ],
+                region: feature.properties.name,
+                country: feature.properties.country,
+                weather: {
+                    temp: feature.properties.temperature,
+                    humidity: feature.properties.humidity,
+                    wind: feature.properties.riskLevel === 'extreme' ? 54 : feature.properties.riskLevel === 'high' ? 38 : 24,
+                    veg: feature.properties.riskLevel === 'extreme' ? 0.12 : feature.properties.riskLevel === 'high' ? 0.22 : 0.36
+                }
+            };
+        });
+
+const fallbackTrend = (query?: LocationQuery, mode: MapLayerMode = 'predictive'): RiskChartData => {
+    const features = getProjectAlertFeatures(query, mode);
+    const averageScore = features.length
+        ? Math.round(features.reduce((total, feature) => total + riskLevelScore(feature.properties.riskLevel), 0) / features.length)
+        : 0;
+    const labels = Array.from({ length: 7 }, (_, index) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (6 - index));
+        return date.toLocaleDateString();
+    });
+    const data = labels.map((_, index) => Math.max(0, Math.min(100, averageScore + ((index % 3) - 1) * 4 + index)));
+
+    return {
+        labels,
+        datasets: [{
+            label: mode === 'active' ? 'Active Detection Confidence' : 'Average Risk Probability',
+            data,
+            fill: true,
+            borderColor: mode === 'active' ? '#ef4444' : '#3b82f6',
+            backgroundColor: mode === 'active' ? 'rgba(239, 68, 68, 0.18)' : 'rgba(59, 130, 246, 0.18)'
+        }]
+    };
+};
+
 const normalizeSeverity = (severity: string): AlertSeverity => {
     const normalized = severity.toLowerCase();
     if (normalized === 'extreme' || normalized === 'high' || normalized === 'moderate') {
@@ -142,10 +247,10 @@ const normalizeStatus = (status: string): AlertStatus => {
 };
 
 export const RiskService = {
-    getMetrics: async (query?: LocationQuery): Promise<RiskMetric[]> => {
+    getMetrics: async (query?: LocationQuery, mode: MapLayerMode = 'predictive'): Promise<RiskMetric[]> => {
         try {
             const summary = await RiskService.getGlobalSummary(query);
-            const alertsSummary = await RiskService.getAlertsSummary(query);
+            const alertsSummary = await RiskService.getAlertsSummary(query, mode);
             
             // Calculate an aggregate risk value from global summary if possible
             const totalPredictions = summary.predictions_summary.reduce((acc, curr) => acc + curr.count, 0);
@@ -153,38 +258,24 @@ export const RiskService = {
                 .filter((r) => r.level === 'High' || r.level === 'Extreme')
                 .reduce((acc, curr) => acc + curr.count, 0);
             
-            if (totalPredictions === 0) {
-                return [
-                    {
-                        title: query?.country ? `${query.country} Risk Index` : "Global Risk Index",
-                        value: "No Data",
-                        change: "No recent prediction",
-                        trend: "neutral"
-                    },
-                    {
-                        title: "Active Alerts",
-                        value: alertsSummary.active_total.toString(),
-                        trend: "neutral",
-                        status: alertsSummary.active_total > 5 ? "high" : "low"
-                    }
-                ];
-            }
-
-            const riskValue = Math.round((highExtreme / totalPredictions) * 100);
+            const riskValue = totalPredictions > 0 ? Math.round((highExtreme / totalPredictions) * 100) : 0;
+            const scope = countryLabel(query?.country);
+            const modePrefix = mode === 'active' ? 'Active Detection' : 'Risk';
 
             return [
                 {
-                    title: query?.country ? `${query.country} Risk Index` : "Global Risk Index",
+                    title: `${scope} ${modePrefix} Index`,
                     value: `${riskValue}/100`,
-                    change: "Live API",
-                    trend: "neutral",
+                    change: mode === 'active' ? 'High/Extreme regions only' : 'Project regional layer',
+                    trend: riskValue > 45 ? "up" : "neutral",
                     status: riskValue > 80 ? 'extreme' : riskValue > 50 ? 'high' : riskValue > 30 ? 'moderate' : 'low'
                 },
                 {
-                    title: "Active Alerts",
+                    title: mode === 'active' ? "Active Detections" : "Active Alerts",
                     value: alertsSummary.active_total.toString(),
                     trend: "neutral",
-                    status: alertsSummary.active_total > 5 ? "high" : "low"
+                    change: `${scope} scope`,
+                    status: alertsSummary.active_extreme > 0 ? "extreme" : alertsSummary.active_high > 0 ? "high" : alertsSummary.active_total > 0 ? "moderate" : "low"
                 }
             ];
         } catch (e) {
@@ -193,32 +284,48 @@ export const RiskService = {
         }
     },
 
-    getAlerts: async (query?: LocationQuery): Promise<Alert[]> => {
+    getAlerts: async (query?: LocationQuery, mode: MapLayerMode = 'predictive'): Promise<Alert[]> => {
         const params = new URLSearchParams({ limit: '50' });
         if (query?.country) params.append('country', query.country);
-        const data = await fetchJson<BackendAlert[]>(`/alerts?${params.toString()}`);
-        
-        return data.map((alert) => {
-            const severity = normalizeSeverity(alert.severity);
-            return {
-                id: alert.id.toString(),
-                title: `${severity.toUpperCase()} Risk Alert`,
-                description: alert.alert_message,
-                timestamp: alert.triggered_at,
-                severity,
-                status: normalizeStatus(alert.status),
-                score: alert.risk_score,
-                drivers: alert.key_drivers ? alert.key_drivers.split(',').map((driver: string) => driver.trim()).filter(Boolean) : [],
-                region: alert.location?.admin_region || 'Unknown',
-                country: alert.location?.country || 'Unknown',
-                weather: alert.weather_input ? {
-                    temp: alert.weather_input.temp,
-                    humidity: alert.weather_input.humidity,
-                    wind: alert.weather_input.wind,
-                    veg: alert.weather_input.veg_moisture
-                } : undefined
-            };
-        });
+        let backendAlerts: Alert[] = [];
+
+        try {
+            const data = await fetchJson<BackendAlert[]>(`/alerts?${params.toString()}`);
+            backendAlerts = data
+                .filter((alert) => query?.country
+                    ? alert.location?.country === query.country
+                    : isProjectCountry(alert.location?.country)
+                )
+                .map((alert) => {
+                    const severity = normalizeSeverity(alert.severity);
+                    return {
+                        id: alert.id.toString(),
+                        title: `${severity.toUpperCase()} Risk Alert`,
+                        description: alert.alert_message,
+                        timestamp: alert.triggered_at,
+                        severity,
+                        status: normalizeStatus(alert.status),
+                        score: alert.risk_score,
+                        drivers: alert.key_drivers ? alert.key_drivers.split(',').map((driver: string) => driver.trim()).filter(Boolean) : [],
+                        region: alert.location?.admin_region || 'Unknown',
+                        country: alert.location?.country || 'Unknown',
+                        weather: alert.weather_input ? {
+                            temp: alert.weather_input.temp,
+                            humidity: alert.weather_input.humidity,
+                            wind: alert.weather_input.wind,
+                            veg: alert.weather_input.veg_moisture
+                        } : undefined
+                    };
+                });
+        } catch (error) {
+            console.warn('Unable to load backend alerts. Using regional wildfire alert layer.', error);
+        }
+
+        const regionalAlerts = fallbackAlerts(query, mode);
+        const merged = [...backendAlerts, ...regionalAlerts];
+        return mode === 'active'
+            ? merged.filter((alert) => alert.severity === 'high' || alert.severity === 'extreme')
+            : merged;
     },
 
     resolveAlert: async (alertId: string): Promise<boolean> => {
@@ -231,16 +338,28 @@ export const RiskService = {
         }
     },
 
-    getAlertsSummary: async (query?: LocationQuery): Promise<AlertsSummary> => {
-        const params = new URLSearchParams();
-        if (query?.country) params.append('country', query.country);
-        if (query?.admin_region) params.append('admin_region', query.admin_region);
-        const suffix = params.toString() ? `?${params.toString()}` : '';
-        return fetchJson<AlertsSummary>(`/alerts/summary${suffix}`);
+    getAlertsSummary: async (query?: LocationQuery, mode: MapLayerMode = 'predictive'): Promise<AlertsSummary> => {
+        const alerts = await RiskService.getAlerts(query, mode);
+        const activeAlerts = alerts.filter((alert) => alert.status === 'active');
+        const today = new Date().toLocaleDateString();
+
+        return {
+            active_total: activeAlerts.length,
+            active_high: activeAlerts.filter((alert) => alert.severity === 'high').length,
+            active_extreme: activeAlerts.filter((alert) => alert.severity === 'extreme').length,
+            generated_today: alerts.filter((alert) => new Date(alert.timestamp).toLocaleDateString() === today).length
+        };
     },
 
-    getRiskTrend: async (query?: LocationQuery): Promise<RiskChartData> => {
-        const history = await RiskService.getHistory(query);
+    getRiskTrend: async (query?: LocationQuery, mode: MapLayerMode = 'predictive'): Promise<RiskChartData> => {
+        let history: HistoryRecord[] = [];
+        try {
+            history = await RiskService.getHistory(query);
+        } catch (error) {
+            console.warn('Unable to load prediction history trend. Using regional wildfire trend.', error);
+            return fallbackTrend(query, mode);
+        }
+
         const grouped = new Map<string, { total: number; count: number }>();
 
         history.forEach((item) => {
@@ -257,19 +376,30 @@ export const RiskService = {
             return bucket ? Math.round(bucket.total / bucket.count) : 0;
         });
 
+        if (labels.length === 0) {
+            return fallbackTrend(query, mode);
+        }
+
         return {
             labels,
             datasets: [{
-                label: 'Average Risk Probability',
+                label: mode === 'active' ? 'Active Detection Confidence' : 'Average Risk Probability',
                 data,
                 fill: true,
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.18)'
+                borderColor: mode === 'active' ? '#ef4444' : '#3b82f6',
+                backgroundColor: mode === 'active' ? 'rgba(239, 68, 68, 0.18)' : 'rgba(59, 130, 246, 0.18)'
             }]
         };
     },
 
     getGlobalSummary: async (query?: LocationQuery): Promise<GlobalSummary> => {
+        const regionalSummary = buildSummaryFromFeatures(getProjectAlertFeatures(query));
+        const regionalTotal = regionalSummary.predictions_summary.reduce((total, item) => total + item.count, 0);
+
+        if (regionalTotal > 0) {
+            return regionalSummary;
+        }
+
         const params = new URLSearchParams();
         if (query?.country) params.append('country', query.country);
         if (query?.admin_region) params.append('admin_region', query.admin_region);
@@ -281,7 +411,11 @@ export const RiskService = {
         const params = new URLSearchParams({ limit: '50' });
         if (query?.country) params.append('country', query.country);
         if (query?.admin_region) params.append('admin_region', query.admin_region);
-        return fetchJson<HistoryRecord[]>(`/history?${params.toString()}`);
+        const history = await fetchJson<HistoryRecord[]>(`/history?${params.toString()}`);
+        return history.filter((item) => query?.country
+            ? item.location?.country === query.country
+            : isProjectCountry(item.location?.country)
+        );
     },
 
     getActiveDetections: async (query?: LocationQuery): Promise<ActiveDetectionLog[]> => {

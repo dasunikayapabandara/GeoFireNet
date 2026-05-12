@@ -126,12 +126,9 @@ const Alerts: React.FC = () => {
                 <div className="alerts-filter-group">
                     <Map size={18} color="var(--text-secondary)" />
                     <select title="Region Filter" value={regionFilter} onChange={e => setRegionFilter(e.target.value)}>
-                        <option value="">Global</option>
-                        <option value="USA">USA</option>
+                        <option value="">Project Scope (USA + Australia)</option>
+                        <option value="USA">United States</option>
                         <option value="Australia">Australia</option>
-                        <option value="Greece">Greece</option>
-                        <option value="Portugal">Portugal</option>
-                        <option value="Canada">Canada</option>
                     </select>
                 </div>
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>

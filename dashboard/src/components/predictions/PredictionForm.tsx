@@ -10,16 +10,12 @@ interface Props {
 const PRESETS = {
     MILD: { temp: 22, humidity: 45, wind: 15, veg_moisture: 0.6, country: 'USA', admin_region: 'California' },
     HIGH: { temp: 35, humidity: 20, wind: 40, veg_moisture: 0.3, country: 'Australia', admin_region: 'New South Wales' },
-    EXTREME: { temp: 42, humidity: 8, wind: 85, veg_moisture: 0.05, country: 'Greece', admin_region: 'Attica' }
+    EXTREME: { temp: 42, humidity: 8, wind: 85, veg_moisture: 0.05, country: 'USA', admin_region: 'Texas' }
 };
 
 const COUNTRY_OPTIONS = [
-    { value: 'USA', label: 'USA' },
+    { value: 'USA', label: 'United States' },
     { value: 'Australia', label: 'Australia' },
-    { value: 'Greece', label: 'Greece' },
-    { value: 'Portugal', label: 'Portugal' },
-    { value: 'Canada', label: 'Canada' },
-    { value: 'Unknown', label: 'Unspecified / Global' },
 ];
 
 const ADMIN_REGIONS_BY_COUNTRY: Record<string, string[]> = {
@@ -36,26 +32,10 @@ const ADMIN_REGIONS_BY_COUNTRY: Record<string, string[]> = {
     Australia: [
         'Australian Capital Territory', 'New South Wales', 'Northern Territory', 'Queensland',
         'South Australia', 'Tasmania', 'Victoria', 'Western Australia'
-    ],
-    Greece: [
-        'Attica', 'Central Greece', 'Central Macedonia', 'Crete', 'Eastern Macedonia and Thrace',
-        'Epirus', 'Ionian Islands', 'North Aegean', 'Peloponnese', 'South Aegean',
-        'Thessaly', 'Western Greece', 'Western Macedonia'
-    ],
-    Portugal: [
-        'Aveiro', 'Beja', 'Braga', 'Braganca', 'Castelo Branco', 'Coimbra', 'Evora',
-        'Faro', 'Guarda', 'Leiria', 'Lisbon', 'Portalegre', 'Porto', 'Santarem',
-        'Setubal', 'Viana do Castelo', 'Vila Real', 'Viseu', 'Azores', 'Madeira'
-    ],
-    Canada: [
-        'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador',
-        'Northwest Territories', 'Nova Scotia', 'Nunavut', 'Ontario', 'Prince Edward Island',
-        'Quebec', 'Saskatchewan', 'Yukon'
-    ],
-    Unknown: ['Global / Not specified']
+    ]
 };
 
-const getAdminRegions = (country: string) => ADMIN_REGIONS_BY_COUNTRY[country] ?? ADMIN_REGIONS_BY_COUNTRY.Unknown;
+const getAdminRegions = (country: string) => ADMIN_REGIONS_BY_COUNTRY[country] ?? ADMIN_REGIONS_BY_COUNTRY.USA;
 
 const PredictionForm: React.FC<Props> = ({ onPredict, onReset, loading }) => {
     const [formData, setFormData] = useState<PredictionInput>({ ...PRESETS.MILD });

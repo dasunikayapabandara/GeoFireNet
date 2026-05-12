@@ -2,23 +2,28 @@ import React, { useEffect, useState } from 'react';
 import { Circle, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import './Map.css';
-import { MapService, type RiskGeoJSON, type RiskLevel, type RiskZoneFeature } from '../../services/MapService';
+import { MapService, type MapLayerMode, type RiskGeoJSON, type RiskLevel, type RiskZoneFeature } from '../../services/MapService';
 import L from 'leaflet';
 
-const MapComponent: React.FC = () => {
+interface MapComponentProps {
+    countryFilter?: string;
+    mode?: MapLayerMode;
+}
+
+const MapComponent: React.FC<MapComponentProps> = ({ countryFilter, mode = 'predictive' }) => {
     const [riskZones, setRiskZones] = useState<RiskGeoJSON | null>(null);
 
     useEffect(() => {
         const fetchZones = async () => {
             try {
-                const data = await MapService.getRiskZones();
+                const data = await MapService.getRiskZones({ country: countryFilter, mode });
                 setRiskZones(data);
             } catch (error) {
                 console.error("Failed to fetch map data", error);
             }
         };
         fetchZones();
-    }, []);
+    }, [countryFilter, mode]);
 
     const getRiskColor = (riskLevel: RiskLevel) => {
         switch (riskLevel) {
@@ -48,15 +53,15 @@ const MapComponent: React.FC = () => {
                 center={[12, -35]}
                 zoom={2}
                 minZoom={2}
-                maxBounds={[[-90, -180], [90, 180]]}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={true}
+                worldCopyJump={true}
+                preferCanvas={true}
             >
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                     url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                     className="map-tiles"
-                    noWrap={true}
                 />
 
                 {riskZones?.features.map((feature) => {

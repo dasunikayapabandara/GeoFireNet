@@ -184,10 +184,9 @@ const Analytics: React.FC = () => {
                     <div className="filter-group">
                         <Map size={18} color="var(--text-secondary)" />
                         <select title="Region Filter" value={region} onChange={(e) => setRegion(e.target.value)}>
-                            <option value="">Global Coverage</option>
-                            <option value="USA">USA</option>
+                            <option value="">Project Scope (USA + Australia)</option>
+                            <option value="USA">United States</option>
                             <option value="Australia">Australia</option>
-                            <option value="Greece">Greece</option>
                         </select>
                     </div>
                 </div>
