@@ -9,10 +9,9 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
-    const { logout, user } = useAuth();
-    const isPublicUser = user?.role === 'Public User';
+    const { logout } = useAuth();
 
-    const adminMenuItems = [
+    const menuItems = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
         { id: 'user', icon: Users, label: 'User Portal' },
         { id: 'map', icon: Map, label: 'Live Map' },
@@ -24,15 +23,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         { id: 'about', icon: Info, label: 'About' },
         { id: 'settings', icon: Settings, label: 'Settings' },
     ];
-
-    const publicMenuItems = [
-        { id: 'user', icon: Users, label: 'User Portal' },
-        { id: 'map', icon: Map, label: 'Risk Map' },
-        { id: 'alerts', icon: Bell, label: 'Public Alerts' },
-        { id: 'about', icon: Info, label: 'About' },
-    ];
-
-    const menuItems = isPublicUser ? publicMenuItems : adminMenuItems;
 
     return (
         <aside className="sidebar">

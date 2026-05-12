@@ -6,15 +6,61 @@ import type { PredictionInput, PredictionResult } from '../types/prediction';
 import { ApiRequestError, fetchJson } from '../config/api';
 import '../styles/Predictions.css';
 
+const getRiskLevel = (probability: number) => {
+    if (probability <= 0.3) return 'Low';
+    if (probability <= 0.5) return 'Moderate';
+    if (probability <= 0.8) return 'High';
+    return 'Extreme';
+};
+
+const buildLocalPrediction = (data: PredictionInput): PredictionResult => {
+    const normalizedTemp = Math.min(data.temp / 50, 1);
+    const normalizedHumidity = Math.min(data.humidity / 100, 1);
+    const normalizedWind = Math.min(data.wind / 100, 1);
+    const normalizedVeg = Math.min(data.veg_moisture, 1);
+
+    const baselineScore = Math.max(
+        0,
+        Math.min(
+            100,
+            (40 * normalizedTemp) + (20 * normalizedWind) - (30 * normalizedHumidity) - (30 * normalizedVeg) + 40
+        )
+    );
+    const probability = Number((baselineScore / 100).toFixed(4));
+    const drivers = [
+        data.temp > 35 ? 'High Temperature' : null,
+        data.wind > 60 ? 'Strong Winds' : null,
+        data.humidity < 30 ? 'Critically Low Humidity' : null,
+        data.veg_moisture < 0.3 ? 'Dry Vegetation' : null,
+        data.temp > 35 && data.wind > 40 ? 'Critical Heat and Wind Interaction' : null
+    ].filter((driver): driver is string => Boolean(driver));
+
+    return {
+        risk_score: Number(baselineScore.toFixed(2)),
+        risk_probability: probability,
+        confidence: probability,
+        risk_level: getRiskLevel(probability),
+        baseline_score: Number(baselineScore.toFixed(2)),
+        baseline_level: getRiskLevel(probability),
+        key_drivers: drivers.length > 0 ? drivers.slice(0, 3) : ['Normal Conditions'],
+        system_status: 'SIMULATION',
+        alert_triggered: probability > 0.5,
+        model_version: 'Local simulation fallback',
+        timestamp: new Date().toISOString()
+    };
+};
+
 const Predictions: React.FC = () => {
     const [result, setResult] = useState<PredictionResult | null>(null);
     const [lastInputs, setLastInputs] = useState<PredictionInput | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
 
     const handlePredict = async (data: PredictionInput) => {
         setLoading(true);
         setError(null);
+        setNotice(null);
         try {
             const resultData = await fetchJson<PredictionResult>('/predict', {
                 method: 'POST',
@@ -23,11 +69,14 @@ const Predictions: React.FC = () => {
             });
             setResult(resultData);
             setLastInputs(data);
+            setNotice(null);
         } catch (e) {
-            console.error("Prediction Error:", e);
-            setError(e instanceof ApiRequestError
-                ? `Failed to execute ML pipeline via ${e.url}. ${e.status ? `Status: ${e.status}.` : 'Backend is unreachable.'}`
-                : "Failed to execute ML pipeline. Ensure backend is running.");
+            console.warn("Prediction API unavailable. Using local simulation fallback.", e);
+            setResult(buildLocalPrediction(data));
+            setLastInputs(data);
+            setNotice(e instanceof ApiRequestError
+                ? `Backend prediction API is unavailable at ${e.url}. Showing local simulation output.`
+                : 'Backend prediction API is unavailable. Showing local simulation output.');
         } finally {
             setLoading(false);
         }
@@ -37,6 +86,7 @@ const Predictions: React.FC = () => {
         setResult(null);
         setLastInputs(null);
         setError(null);
+        setNotice(null);
     };
 
     return (
@@ -45,6 +95,7 @@ const Predictions: React.FC = () => {
                 <h2>Predictive Modeller</h2>
                 <p className="text-muted">Simulate environmental parameters to execute the ML pipeline and analyze risk.</p>
                 {error && <div className="settings-alert error">{error}</div>}
+                {notice && <div className="settings-alert success">{notice}</div>}
             </div>
 
             <div className="predictions-workbench">

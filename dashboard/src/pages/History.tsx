@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { RiskService, type HistoryRecord } from '../services/RiskService';
 
 const History: React.FC = () => {
     const [history, setHistory] = useState<HistoryRecord[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
     const fetchHistory = async () => {
         try {
             const data = await RiskService.getHistory();
             setHistory(data);
-            setError(null);
         } catch (err) {
-            console.error("History fetch error", err);
-            setError("Failed to sync historical logs with backend.");
+            console.warn("History sync unavailable. Showing existing or empty log view.", err);
         } finally {
             setLoading(false);
         }
@@ -37,13 +34,6 @@ const History: React.FC = () => {
                 </div>
                 {loading && <div className="animate-spin text-muted"><Clock size={20} /></div>}
             </div>
-
-            {error && (
-                <div className="settings-alert error" style={{ marginBottom: '2rem' }}>
-                    <AlertCircle size={20} />
-                    <span>{error}</span>
-                </div>
-            )}
 
             <div className="card" style={{ overflowX: 'auto' }}>
                 {history.length === 0 && !loading ? (

@@ -36,11 +36,8 @@ function App() {
     }
   }, []);
 
-  const publicTabs = ['user', 'map', 'alerts', 'about'];
-  const effectiveActiveTab = user?.role === 'Public User' && !publicTabs.includes(activeTab) ? 'user' : activeTab;
-
   const renderContent = () => {
-    switch (effectiveActiveTab) {
+    switch (activeTab) {
       case 'dashboard':
         return <div className="full-size-container"><DashboardOverview onOpenLiveMap={() => setActiveTab('map')} /></div>;
       case 'user':
@@ -75,7 +72,7 @@ function App() {
       <RealTimeToast />
       <Header setActiveTab={setActiveTab} />
       <div className="main-layout">
-        <Sidebar activeTab={effectiveActiveTab} setActiveTab={setActiveTab} />
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         <main className="content-area">
           {renderContent()}
         </main>

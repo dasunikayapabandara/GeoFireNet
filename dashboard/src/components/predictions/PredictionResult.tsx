@@ -25,6 +25,8 @@ const getInterpretation = (level: string) => {
 };
 
 const PredictionResultCard: React.FC<Props> = ({ result, inputs }) => {
+    const isLocalSimulation = result.system_status === 'SIMULATION';
+
     return (
         <div className="predictions-results-column">
             {/* Primary Score Output Card */}
@@ -51,7 +53,9 @@ const PredictionResultCard: React.FC<Props> = ({ result, inputs }) => {
                 <h4 className="section-title">Model Inference Reasoning</h4>
 
                 <p className="text-muted mb-4 small">
-                    The RandomForestClassifier flagged the following primary conditions driving the wildfire risk probability.
+                    {isLocalSimulation
+                        ? 'The local simulation flagged the following primary conditions driving the wildfire risk probability.'
+                        : 'The RandomForestClassifier flagged the following primary conditions driving the wildfire risk probability.'}
                 </p>
 
                 <ul className="driver-list">
@@ -81,7 +85,11 @@ const PredictionResultCard: React.FC<Props> = ({ result, inputs }) => {
             {(result.risk_level === 'High' || result.risk_level === 'Extreme') && (
                 <div className="card alert-action-card mt-4">
                     <h4>🚨 Actionable Alert Triggered</h4>
-                    <p className="text-muted small mb-3">This inference breached the SQL database severity thresholds. A live alert log has been dispatched to the monitoring center automatically.</p>
+                    <p className="text-muted small mb-3">
+                        {isLocalSimulation
+                            ? 'This local simulation exceeded the alert threshold. Start the backend API to persist alert records.'
+                            : 'This inference breached the SQL database severity thresholds. A live alert log has been dispatched to the monitoring center automatically.'}
+                    </p>
                     <button className="btn btn-outline" onClick={() => window.location.href = '/alerts'}>Review Active Alerts</button>
                 </div>
             )}

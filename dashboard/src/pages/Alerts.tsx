@@ -4,6 +4,7 @@ import {
     Map, X, ThermometerSun, Wind, Droplets, Leaf
 } from 'lucide-react';
 import { RiskService, type Alert, type AlertSeverity, type AlertStatus, type AlertsSummary } from '../services/RiskService';
+import { useAuth } from '../context/useAuth';
 import '../styles/Alerts.css';
 
 const emptySummary: AlertsSummary = {
@@ -14,6 +15,8 @@ const emptySummary: AlertsSummary = {
 };
 
 const Alerts: React.FC = () => {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'Administrator';
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [summary, setSummary] = useState<AlertsSummary>(emptySummary);
     const [loading, setLoading] = useState(true);
@@ -79,7 +82,7 @@ const Alerts: React.FC = () => {
             <div className="alerts-header">
                 <div className="alerts-title">
                     <h1><BellRing size={32} color="var(--accent-primary)" /> Alert Center</h1>
-                    <p>Manage, review, and acknowledge predictive warnings.</p>
+                    <p>{isAdmin ? 'Manage, review, and acknowledge predictive warnings.' : 'Review predictive warnings in read-only mode.'}</p>
                 </div>
             </div>
 
@@ -247,7 +250,7 @@ const Alerts: React.FC = () => {
                         </div>
                         <div className="modal-footer">
                             <button className="btn btn-ghost" onClick={() => setSelectedAlert(null)}>Close</button>
-                            {selectedAlert.status === 'active' && (
+                            {isAdmin && selectedAlert.status === 'active' && (
                                 <button className="btn btn-primary" onClick={() => resolveAlert(selectedAlert.id)}>
                                     Mark as Resolved
                                 </button>

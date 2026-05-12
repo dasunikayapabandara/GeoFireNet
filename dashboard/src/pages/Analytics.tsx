@@ -80,11 +80,15 @@ const Analytics: React.FC = () => {
         try {
             void timeRange;
             const query = { country: region || undefined };
+            const historyRequest = RiskService.getHistory(query).catch((err) => {
+                console.warn('Unable to load analytics history. Continuing with regional analytics.', err);
+                return [] as HistoryRecord[];
+            });
             const [summaryData, alertsSum, trend, historyData, alerts] = await Promise.all([
                 RiskService.getGlobalSummary({ country: region || undefined }),
                 RiskService.getAlertsSummary(query),
                 RiskService.getRiskTrend(query),
-                RiskService.getHistory(query),
+                historyRequest,
                 RiskService.getAlerts(query)
             ]);
             setSummary(summaryData);
