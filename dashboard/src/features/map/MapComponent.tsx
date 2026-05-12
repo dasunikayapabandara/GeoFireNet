@@ -45,9 +45,9 @@ const MapComponent: React.FC = () => {
     return (
         <div className="map-container">
             <MapContainer
-                center={[38.5, -121.5]} // Center near Sacramento/Napa
-                zoom={8}
-                minZoom={3}
+                center={[12, -35]}
+                zoom={2}
+                minZoom={2}
                 maxBounds={[[-90, -180], [90, 180]]}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={true}
@@ -65,6 +65,8 @@ const MapComponent: React.FC = () => {
                     const popup = (
                         <div className="map-popup">
                             <h3>{feature.properties.name}</h3>
+                            <p>{feature.properties.regionType} in {feature.properties.country}</p>
+                            <p>Layer: {feature.properties.source}</p>
                             <p>Risk Level: <strong className={`risk-${feature.properties.riskLevel}`}>{feature.properties.riskLevel.toUpperCase()}</strong></p>
                             <p>Radius: {(feature.properties.radiusMeters / 1000).toFixed(1)} km</p>
                             <p>Alpha: {feature.properties.alpha.toFixed(2)}</p>

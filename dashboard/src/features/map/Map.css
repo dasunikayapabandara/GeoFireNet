@@ -128,6 +128,11 @@
     font-size: 0.875rem;
 }
 
+.map-popup p:first-of-type {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
 /* Risk Text Colors */
 .risk-low {
     color: var(--accent-risk-low);
