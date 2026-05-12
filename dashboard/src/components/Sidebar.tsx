@@ -9,11 +9,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
+    const isAdmin = user?.role === 'Administrator';
 
     const menuItems = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
-        { id: 'user', icon: Users, label: 'User Portal' },
+        ...(isAdmin ? [{ id: 'user', icon: Users, label: 'User Portal' }] : []),
         { id: 'map', icon: Map, label: 'Live Map' },
         { id: 'reactive', icon: Camera, label: 'Reactive' },
         { id: 'predictions', icon: PlaySquare, label: 'Predictions' },

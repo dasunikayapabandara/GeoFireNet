@@ -79,9 +79,8 @@ const UserPortal: React.FC = () => {
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
     const visibleEntries = useMemo(() => {
-        if (isAdmin) return entries;
-        return entries.filter((entry) => entry.userEmail === user?.email);
-    }, [entries, isAdmin, user?.email]);
+        return entries;
+    }, [entries]);
 
     const persistEntries = (nextEntries: UserRiskEntry[]) => {
         setEntries(nextEntries);
@@ -106,7 +105,7 @@ const UserPortal: React.FC = () => {
 
     const submitRiskEntry = (event: React.FormEvent) => {
         event.preventDefault();
-        if (!user) return;
+        if (!user || !isAdmin) return;
 
         const entry: UserRiskEntry = {
             id: `risk-${Date.now()}`,
@@ -154,13 +153,23 @@ const UserPortal: React.FC = () => {
         if (editEntry?.id === id) setEditEntry(null);
     };
 
+    if (!isAdmin) {
+        return (
+            <div className="user-portal">
+                <section className="card user-entry-card">
+                    <div className="user-empty-state">User Portal access is restricted to administrators.</div>
+                </section>
+            </div>
+        );
+    }
+
     return (
         <div className="user-portal">
             <div className="user-portal-header">
                 <div>
                     <span className="portal-eyebrow"><Users size={16} /> User Portal</span>
                     <h2>Wildfire Risk Entries</h2>
-                    <p>{isAdmin ? 'Review and manage risk details submitted by signed-in users.' : 'Add wildfire risk details under your signed-in account.'}</p>
+                    <p>Administrator workspace for viewing and editing wildfire risk details submitted by users.</p>
                 </div>
                 <div className="portal-user-card">
                     <UserCheck size={20} />
@@ -182,7 +191,7 @@ const UserPortal: React.FC = () => {
                 <div className="user-risk-card">
                     <span><Flame size={18} /> Total Entries</span>
                     <strong>{visibleEntries.length}</strong>
-                    <p>{isAdmin ? 'Submitted by all users' : 'Submitted by your account'}</p>
+                    <p>Submitted by all users</p>
                 </div>
                 <div className="user-risk-card risk-high">
                     <span><AlertTriangle size={18} /> High or Extreme</span>

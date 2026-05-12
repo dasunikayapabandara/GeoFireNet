@@ -29,7 +29,7 @@ const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTa
     };
 
     const handleLogoClick = () => {
-        setActiveTab(user?.role === 'Public User' ? 'user' : 'dashboard');
+        setActiveTab('dashboard');
     };
 
     return (

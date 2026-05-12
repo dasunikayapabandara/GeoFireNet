@@ -20,7 +20,8 @@ import Footer from './components/Footer';
 
 function App() {
   const { isAuthenticated, user } = useAuth();
-  const [activeTab, setActiveTab] = useState(user?.role === 'Public User' ? 'user' : 'dashboard');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const isAdmin = user?.role === 'Administrator';
 
   // Apply theme on first render based on saved settings
   useEffect(() => {
@@ -36,12 +37,16 @@ function App() {
     }
   }, []);
 
+  const effectiveActiveTab = !isAdmin && activeTab === 'user' ? 'dashboard' : activeTab;
+
   const renderContent = () => {
-    switch (activeTab) {
+    switch (effectiveActiveTab) {
       case 'dashboard':
         return <div className="full-size-container"><DashboardOverview onOpenLiveMap={() => setActiveTab('map')} /></div>;
       case 'user':
-        return <div className="full-size-container"><UserPortal /></div>;
+        return isAdmin
+          ? <div className="full-size-container"><UserPortal /></div>
+          : <div className="full-size-container"><DashboardOverview onOpenLiveMap={() => setActiveTab('map')} /></div>;
       case 'map':
         return <div className="full-size-container"><MapComponent /></div>;
       case 'predictions':
@@ -72,7 +77,7 @@ function App() {
       <RealTimeToast />
       <Header setActiveTab={setActiveTab} />
       <div className="main-layout">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Sidebar activeTab={effectiveActiveTab} setActiveTab={setActiveTab} />
         <main className="content-area">
           {renderContent()}
         </main>

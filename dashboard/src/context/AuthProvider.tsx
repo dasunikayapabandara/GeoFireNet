@@ -55,6 +55,9 @@ const findStoredUser = (email: string) => {
 };
 
 const resolveUser = (email: string): AuthUser | null => {
+    if (normalizeEmail(email) === DEFAULT_USER.email) return DEFAULT_USER;
+    if (normalizeEmail(email) === PUBLIC_USER.email) return PUBLIC_USER;
+
     const storedUser = findStoredUser(email);
     if (storedUser) {
         return {
@@ -63,9 +66,6 @@ const resolveUser = (email: string): AuthUser | null => {
             role: storedUser.role,
         };
     }
-
-    if (normalizeEmail(email) === DEFAULT_USER.email) return DEFAULT_USER;
-    if (normalizeEmail(email) === PUBLIC_USER.email) return PUBLIC_USER;
 
     return null;
 };
@@ -120,7 +120,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const storedUser = findStoredUser(normalizedEmail);
         const passwordHash = await hashPassword(pass);
         const isStoredUserMatch = storedUser?.passwordHash === passwordHash;
-        const isDefaultUserMatch = normalizedEmail === DEFAULT_USER.email && pass === DEFAULT_PASSWORD && !storedUser;
+        const isDefaultUserMatch = normalizedEmail === DEFAULT_USER.email && pass === DEFAULT_PASSWORD;
 
         if (isStoredUserMatch || isDefaultUserMatch) {
             const session = { email: normalizedEmail, rememberMe };
