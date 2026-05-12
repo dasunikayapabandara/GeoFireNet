@@ -43,9 +43,17 @@ const loadStoredSettings = (): SettingsState => {
 };
 
 const Settings: React.FC = () => {
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const [settings, setSettings] = useState<SettingsState>(loadStoredSettings);
     const [statusMessage, setStatusMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+    const displayName = user?.name ?? 'Fire Risk Analyst';
+    const displayEmail = user?.email ?? 'admin@geofirenet.com';
+    const initials = displayName
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join('') || 'FA';
 
     const handleChange = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
         setSettings(prev => ({ ...prev, [key]: value }));
@@ -97,10 +105,10 @@ const Settings: React.FC = () => {
                 <div className="card settings-card">
                     <h3 className="section-title">User Profile</h3>
                     <div className="profile-info">
-                        <div className="avatar-placeholder">FA</div>
+                        <div className="avatar-placeholder">{initials}</div>
                         <div>
-                            <h4>Fire Risk Analyst</h4>
-                            <p className="text-muted">analyst@geofirenet.local</p>
+                            <h4>{displayName}</h4>
+                            <p className="text-muted">{displayEmail}</p>
                         </div>
                     </div>
                     <div className="form-actions mt-4">

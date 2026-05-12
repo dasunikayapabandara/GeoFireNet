@@ -3,10 +3,12 @@
     width: 100vw;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     background-color: var(--bg-primary);
     background-image: radial-gradient(circle at center, rgba(249, 115, 22, 0.05) 0%, transparent 50%);
     font-family: inherit;
+    overflow-y: auto;
+    padding: 2rem 1rem;
 }
 
 .login-card {
@@ -19,6 +21,7 @@
     padding: 2.5rem;
     display: flex;
     flex-direction: column;
+    margin: auto 0;
 }
 
 .login-header {
@@ -72,6 +75,17 @@
     padding: 0.75rem;
     border-radius: 0.5rem;
     border: 1px solid rgba(239, 68, 68, 0.3);
+    font-size: 0.875rem;
+    text-align: center;
+    font-weight: 500;
+}
+
+.success-banner {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: var(--accent-risk-low);
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(34, 197, 94, 0.3);
     font-size: 0.875rem;
     text-align: center;
     font-weight: 500;
@@ -165,6 +179,30 @@
 
 .forgot-link:hover {
     text-decoration: underline;
+}
+
+.text-link-button {
+    background: transparent;
+    border: none;
+    color: var(--accent-risk-high);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+    padding: 0;
+    text-align: left;
+}
+
+.text-link-button:hover {
+    text-decoration: underline;
+}
+
+.first-user-option {
+    align-items: center;
+    color: var(--text-secondary);
+    display: flex;
+    font-size: 0.875rem;
+    gap: 0.5rem;
+    justify-content: center;
 }
 
 .login-button {

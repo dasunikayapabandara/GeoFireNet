@@ -4,7 +4,7 @@ import '../styles/Header.css';
 import { useAuth } from '../context/useAuth';
 
 const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTab }) => {
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -46,8 +46,8 @@ const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTa
                             <User size={20} />
                         </div>
                         <div className="user-details">
-                            <span className="username">Fire Analyst</span>
-                            <span className="user-email">admin@geofirenet.com</span>
+                            <span className="username">{user?.name ?? 'Fire Analyst'}</span>
+                            <span className="user-email">{user?.email ?? 'admin@geofirenet.com'}</span>
                         </div>
                         <ChevronDown size={16} className={`dropdown-icon ${isDropdownOpen ? 'open' : ''}`} />
                     </div>
