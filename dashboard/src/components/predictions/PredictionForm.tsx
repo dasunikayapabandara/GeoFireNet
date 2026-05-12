@@ -8,16 +8,69 @@ interface Props {
 }
 
 const PRESETS = {
-    MILD: { temp: 22, humidity: 45, wind: 15, veg_moisture: 0.6, country: 'USA', admin_region: 'Napa Valley' },
+    MILD: { temp: 22, humidity: 45, wind: 15, veg_moisture: 0.6, country: 'USA', admin_region: 'California' },
     HIGH: { temp: 35, humidity: 20, wind: 40, veg_moisture: 0.3, country: 'Australia', admin_region: 'New South Wales' },
     EXTREME: { temp: 42, humidity: 8, wind: 85, veg_moisture: 0.05, country: 'Greece', admin_region: 'Attica' }
 };
+
+const COUNTRY_OPTIONS = [
+    { value: 'USA', label: 'USA' },
+    { value: 'Australia', label: 'Australia' },
+    { value: 'Greece', label: 'Greece' },
+    { value: 'Portugal', label: 'Portugal' },
+    { value: 'Canada', label: 'Canada' },
+    { value: 'Unknown', label: 'Unspecified / Global' },
+];
+
+const ADMIN_REGIONS_BY_COUNTRY: Record<string, string[]> = {
+    USA: [
+        'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+        'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
+        'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan',
+        'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
+        'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
+        'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
+        'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia',
+        'Wisconsin', 'Wyoming'
+    ],
+    Australia: [
+        'Australian Capital Territory', 'New South Wales', 'Northern Territory', 'Queensland',
+        'South Australia', 'Tasmania', 'Victoria', 'Western Australia'
+    ],
+    Greece: [
+        'Attica', 'Central Greece', 'Central Macedonia', 'Crete', 'Eastern Macedonia and Thrace',
+        'Epirus', 'Ionian Islands', 'North Aegean', 'Peloponnese', 'South Aegean',
+        'Thessaly', 'Western Greece', 'Western Macedonia'
+    ],
+    Portugal: [
+        'Aveiro', 'Beja', 'Braga', 'Braganca', 'Castelo Branco', 'Coimbra', 'Evora',
+        'Faro', 'Guarda', 'Leiria', 'Lisbon', 'Portalegre', 'Porto', 'Santarem',
+        'Setubal', 'Viana do Castelo', 'Vila Real', 'Viseu', 'Azores', 'Madeira'
+    ],
+    Canada: [
+        'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador',
+        'Northwest Territories', 'Nova Scotia', 'Nunavut', 'Ontario', 'Prince Edward Island',
+        'Quebec', 'Saskatchewan', 'Yukon'
+    ],
+    Unknown: ['Global / Not specified']
+};
+
+const getAdminRegions = (country: string) => ADMIN_REGIONS_BY_COUNTRY[country] ?? ADMIN_REGIONS_BY_COUNTRY.Unknown;
 
 const PredictionForm: React.FC<Props> = ({ onPredict, onReset, loading }) => {
     const [formData, setFormData] = useState<PredictionInput>({ ...PRESETS.MILD });
 
     const handleChange = (key: keyof PredictionInput, val: string | number) => {
         setFormData(prev => ({ ...prev, [key]: val }));
+    };
+
+    const handleCountryChange = (country: string) => {
+        const regions = getAdminRegions(country);
+        setFormData(prev => ({
+            ...prev,
+            country,
+            admin_region: regions[0] ?? ''
+        }));
     };
 
     const loadPreset = (preset: typeof PRESETS.MILD) => {
@@ -87,19 +140,24 @@ const PredictionForm: React.FC<Props> = ({ onPredict, onReset, loading }) => {
                 {/* Geography Variables */}
                 <div className="form-group geo-group mt-4">
                     <label>Country Context</label>
-                    <select value={formData.country} onChange={e => handleChange('country', e.target.value)} className="input-text">
-                        <option value="USA">USA</option>
-                        <option value="Australia">Australia</option>
-                        <option value="Greece">Greece</option>
-                        <option value="Portugal">Portugal</option>
-                        <option value="Canada">Canada</option>
-                        <option value="Unknown">Unspecified / Global</option>
+                    <select value={formData.country} onChange={e => handleCountryChange(e.target.value)} className="input-text">
+                        {COUNTRY_OPTIONS.map((country) => (
+                            <option key={country.value} value={country.value}>{country.label}</option>
+                        ))}
                     </select>
                 </div>
 
                 <div className="form-group geo-group mt-4">
                     <label>Administrative Region / Province</label>
-                    <input type="text" value={formData.admin_region} onChange={(e) => handleChange('admin_region', e.target.value)} className="input-text" placeholder="E.g. California" />
+                    <select
+                        value={formData.admin_region}
+                        onChange={(e) => handleChange('admin_region', e.target.value)}
+                        className="input-text"
+                    >
+                        {getAdminRegions(formData.country).map((region) => (
+                            <option key={region} value={region}>{region}</option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="form-actions form-full-row">
