@@ -41,6 +41,59 @@
     display: inline-block;
 }
 
+.legend-radius-sample {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--accent-risk-high);
+    border-radius: 999px;
+    background: rgba(249, 115, 22, 0.22);
+    display: inline-block;
+}
+
+.risk-location-marker {
+    background: transparent;
+    border: 0;
+}
+
+.risk-location-pin {
+    position: relative;
+    display: block;
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(255, 255, 255, 0.95);
+    border-radius: 50% 50% 50% 0;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.45);
+    transform: rotate(-45deg);
+}
+
+.risk-location-pin::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.risk-pin-low {
+    background-color: var(--accent-risk-low);
+}
+
+.risk-pin-moderate {
+    background-color: var(--accent-risk-med);
+}
+
+.risk-pin-high {
+    background-color: var(--accent-risk-high);
+}
+
+.risk-pin-extreme {
+    background-color: var(--accent-risk-extreme);
+}
+
 /* Customizing Leaflet Controls for Dark Theme */
 .leaflet-control-zoom a {
     background-color: var(--bg-secondary) !important;
