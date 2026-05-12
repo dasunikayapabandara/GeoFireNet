@@ -153,17 +153,11 @@
     top: calc(100% + 0.5rem);
     right: 0;
     width: 240px;
-    background-color: white;
+    background-color: var(--bg-secondary);
     border-radius: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-lg);
     padding: 0.5rem 0;
     z-index: 100;
-}
-
-/* Dark mode colors if applicable, but we stick to the image which is light */
-:root[data-theme='dark'] .profile-dropdown-menu {
-    background-color: var(--bg-secondary);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -176,38 +170,17 @@
 .dropdown-item {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
-    color: #374151;
-    /* Dark gray */
+    color: var(--text-primary);
     cursor: pointer;
     transition: background-color 0.15s;
     -webkit-user-select: none;
     user-select: none;
 }
 
-:root[data-theme='dark'] .dropdown-item {
-    color: var(--text-primary);
-}
-
 .dropdown-item:hover {
-    background-color: #f3f4f6;
-    /* Light gray hover */
-}
-
-:root[data-theme='dark'] .dropdown-item:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
-.dropdown-divider {
-    height: 1px;
-    background-color: #e5e7eb;
-    margin: 0.5rem 0;
-}
-
-:root[data-theme='dark'] .dropdown-divider {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
 .dropdown-item.text-danger {
-    color: #ef4444;
-    /* Red for logout */
+    color: var(--accent-risk-extreme);
 }

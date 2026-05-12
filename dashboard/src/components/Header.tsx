@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Flame, Bell, User, ChevronDown } from 'lucide-react';
 import '../styles/Header.css';
 import { useAuth } from '../context/useAuth';
@@ -17,8 +17,6 @@ const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTa
 
         if (isDropdownOpen) {
             document.addEventListener('mousedown', handleClickOutside);
-        } else {
-            document.removeEventListener('mousedown', handleClickOutside);
         }
 
         return () => {
@@ -27,7 +25,7 @@ const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTa
     }, [isDropdownOpen]);
 
     const toggleDropdown = () => {
-        setIsDropdownOpen(!isDropdownOpen);
+        setIsDropdownOpen((current) => !current);
     };
 
     return (

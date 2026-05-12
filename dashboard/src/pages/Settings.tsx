@@ -255,8 +255,8 @@ const Settings: React.FC = () => {
                             <label>Stay Logged In (Remember Me)</label>
                         </div>
                         <label className="toggle-switch">
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={settings.stayLoggedIn}
                                 onChange={(e) => handleChange('stayLoggedIn', e.target.checked)}
                             />
