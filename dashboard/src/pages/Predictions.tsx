@@ -3,7 +3,7 @@ import PredictionForm from '../components/predictions/PredictionForm';
 import PredictionResultCard from '../components/predictions/PredictionResult';
 import PredictionHistory from '../components/predictions/PredictionHistory';
 import type { PredictionInput, PredictionResult } from '../types/prediction';
-import { ApiRequestError, fetchJson } from '../config/api';
+import { fetchJson } from '../config/api';
 import '../styles/Predictions.css';
 
 const getRiskLevel = (probability: number) => {
@@ -54,13 +54,9 @@ const Predictions: React.FC = () => {
     const [result, setResult] = useState<PredictionResult | null>(null);
     const [lastInputs, setLastInputs] = useState<PredictionInput | null>(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [notice, setNotice] = useState<string | null>(null);
 
     const handlePredict = async (data: PredictionInput) => {
         setLoading(true);
-        setError(null);
-        setNotice(null);
         try {
             const resultData = await fetchJson<PredictionResult>('/predict', {
                 method: 'POST',
@@ -69,14 +65,10 @@ const Predictions: React.FC = () => {
             });
             setResult(resultData);
             setLastInputs(data);
-            setNotice(null);
         } catch (e) {
             console.warn("Prediction API unavailable. Using local simulation fallback.", e);
             setResult(buildLocalPrediction(data));
             setLastInputs(data);
-            setNotice(e instanceof ApiRequestError
-                ? `Backend prediction API is unavailable at ${e.url}. Showing local simulation output.`
-                : 'Backend prediction API is unavailable. Showing local simulation output.');
         } finally {
             setLoading(false);
         }
@@ -85,8 +77,6 @@ const Predictions: React.FC = () => {
     const handleReset = () => {
         setResult(null);
         setLastInputs(null);
-        setError(null);
-        setNotice(null);
     };
 
     return (
@@ -94,8 +84,6 @@ const Predictions: React.FC = () => {
             <div className="predictions-header">
                 <h2>Predictive Modeller</h2>
                 <p className="text-muted">Simulate environmental parameters to execute the ML pipeline and analyze risk.</p>
-                {error && <div className="settings-alert error">{error}</div>}
-                {notice && <div className="settings-alert success">{notice}</div>}
             </div>
 
             <div className="predictions-workbench">
