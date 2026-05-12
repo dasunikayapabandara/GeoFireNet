@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import RiskCard from './RiskCard';
 import RiskChart from './RiskChart';
-import { AlertCircle, RefreshCw, Activity } from 'lucide-react';
+import MapComponent from '../map/MapComponent';
+import { AlertCircle, RefreshCw, Activity, Map } from 'lucide-react';
 import { RiskService, type RiskMetric, type Alert, type RiskChartData } from '../../services/RiskService';
 import { API_BASE_URL, checkBackendStatus } from '../../config/api';
 import '../../styles/DashboardOverview.css';
@@ -11,7 +12,11 @@ interface DashboardError {
     details: string[];
 }
 
-const DashboardOverview: React.FC = () => {
+interface DashboardOverviewProps {
+    onOpenLiveMap: () => void;
+}
+
+const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) => {
     const [metrics, setMetrics] = useState<RiskMetric[]>([]);
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [chartData, setChartData] = useState<RiskChartData | undefined>(undefined);
@@ -153,18 +158,37 @@ const DashboardOverview: React.FC = () => {
             </div>
 
             <div className="dashboard-main-content">
-                <div className="chart-section card" style={{ opacity: viewMode === 'active' ? 0.3 : 1, transition: 'opacity 0.3s ease' }}>
-                    <div className="section-header">
-                        <h3>Risk Forecast {countryFilter ? `for ${countryFilter}` : 'Globally'}</h3>
-                    </div>
-                    {chartData?.labels.length === 0 ? (
-                        <div className="empty-state-placeholder" style={{ height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
-                            <Activity size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                            <p>No prediction history available for trend analysis yet.</p>
+                <div className="forecast-column">
+                    <div className="overview-map-section card">
+                        <div className="section-header">
+                            <h3>Global Risk Map</h3>
+                            <button
+                                type="button"
+                                className="btn btn-outline overview-map-link"
+                                onClick={onOpenLiveMap}
+                            >
+                                <Map size={16} />
+                                <span>Open Live Map</span>
+                            </button>
                         </div>
-                    ) : (
-                        <RiskChart data={chartData} />
-                    )}
+                        <div className="overview-map-shell">
+                            <MapComponent />
+                        </div>
+                    </div>
+
+                    <div className="chart-section card" style={{ opacity: viewMode === 'active' ? 0.3 : 1, transition: 'opacity 0.3s ease' }}>
+                        <div className="section-header">
+                            <h3>Risk Forecast {countryFilter ? `for ${countryFilter}` : 'Globally'}</h3>
+                        </div>
+                        {chartData?.labels.length === 0 ? (
+                            <div className="empty-state-placeholder" style={{ height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
+                                <Activity size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                                <p>No prediction history available for trend analysis yet.</p>
+                            </div>
+                        ) : (
+                            <RiskChart data={chartData} />
+                        )}
+                    </div>
                 </div>
 
                 <div className="alerts-section card">

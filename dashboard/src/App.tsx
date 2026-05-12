@@ -38,7 +38,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <div className="full-size-container"><DashboardOverview /></div>;
+        return <div className="full-size-container"><DashboardOverview onOpenLiveMap={() => setActiveTab('map')} /></div>;
       case 'map':
         return <div className="full-size-container"><MapComponent /></div>;
       case 'predictions':
