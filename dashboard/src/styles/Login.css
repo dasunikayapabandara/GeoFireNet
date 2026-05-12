@@ -227,6 +227,25 @@
     cursor: not-allowed;
 }
 
+.public-login-button {
+    margin-top: 1rem;
+    width: 100%;
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 0.875rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.public-login-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
 .login-footer {
     margin-top: 2rem;
     text-align: center;

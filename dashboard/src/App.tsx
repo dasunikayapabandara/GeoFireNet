@@ -10,6 +10,7 @@ import Analytics from './pages/Analytics';
 import History from './pages/History';
 import About from './pages/About';
 import Settings from './pages/Settings';
+import UserPortal from './pages/UserPortal';
 import Login from './pages/Login';
 import RealTimeToast from './components/RealTimeToast';
 import { useAuth } from './context/useAuth';
@@ -18,8 +19,8 @@ import './styles/App.css';
 import Footer from './components/Footer';
 
 function App() {
-  const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { isAuthenticated, user } = useAuth();
+  const [activeTab, setActiveTab] = useState(user?.role === 'Public User' ? 'user' : 'dashboard');
 
   // Apply theme on first render based on saved settings
   useEffect(() => {
@@ -35,10 +36,15 @@ function App() {
     }
   }, []);
 
+  const publicTabs = ['user', 'map', 'alerts', 'about'];
+  const effectiveActiveTab = user?.role === 'Public User' && !publicTabs.includes(activeTab) ? 'user' : activeTab;
+
   const renderContent = () => {
-    switch (activeTab) {
+    switch (effectiveActiveTab) {
       case 'dashboard':
         return <div className="full-size-container"><DashboardOverview onOpenLiveMap={() => setActiveTab('map')} /></div>;
+      case 'user':
+        return <div className="full-size-container"><UserPortal /></div>;
       case 'map':
         return <div className="full-size-container"><MapComponent /></div>;
       case 'predictions':
@@ -69,7 +75,7 @@ function App() {
       <RealTimeToast />
       <Header setActiveTab={setActiveTab} />
       <div className="main-layout">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Sidebar activeTab={effectiveActiveTab} setActiveTab={setActiveTab} />
         <main className="content-area">
           {renderContent()}
         </main>

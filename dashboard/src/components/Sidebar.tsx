@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Map, BarChart3, Settings, LogOut, Camera, PlaySquare, Bell, Clock, Info } from 'lucide-react';
+import { LayoutDashboard, Map, BarChart3, Settings, LogOut, Camera, PlaySquare, Bell, Clock, Info, Users } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import '../styles/Sidebar.css';
 
@@ -9,10 +9,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
+    const isPublicUser = user?.role === 'Public User';
 
-    const menuItems = [
+    const adminMenuItems = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Overview' },
+        { id: 'user', icon: Users, label: 'User Portal' },
         { id: 'map', icon: Map, label: 'Live Map' },
         { id: 'reactive', icon: Camera, label: 'Reactive' },
         { id: 'predictions', icon: PlaySquare, label: 'Predictions' },
@@ -22,6 +24,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         { id: 'about', icon: Info, label: 'About' },
         { id: 'settings', icon: Settings, label: 'Settings' },
     ];
+
+    const publicMenuItems = [
+        { id: 'user', icon: Users, label: 'User Portal' },
+        { id: 'map', icon: Map, label: 'Risk Map' },
+        { id: 'alerts', icon: Bell, label: 'Public Alerts' },
+        { id: 'about', icon: Info, label: 'About' },
+    ];
+
+    const menuItems = isPublicUser ? publicMenuItems : adminMenuItems;
 
     return (
         <aside className="sidebar">

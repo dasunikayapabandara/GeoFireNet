@@ -28,9 +28,13 @@ const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTa
         setIsDropdownOpen((current) => !current);
     };
 
+    const handleLogoClick = () => {
+        setActiveTab(user?.role === 'Public User' ? 'user' : 'dashboard');
+    };
+
     return (
         <header className="header">
-            <div className="header-logo" onClick={() => setActiveTab('dashboard')} style={{ cursor: 'pointer' }}>
+            <div className="header-logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
                 <Flame className="logo-icon" size={24} color="#f97316" />
                 <h1 className="logo-text">GeoFireNet</h1>
             </div>

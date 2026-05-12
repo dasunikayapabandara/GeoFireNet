@@ -16,6 +16,7 @@ export interface AuthContextType {
     user: AuthUser | null;
     hasLocalUser: boolean;
     login: (email: string, pass: string, rememberMe: boolean) => Promise<boolean>;
+    loginAsPublicUser: () => void;
     createFirstUser: (name: string, email: string, pass: string, rememberMe: boolean) => Promise<AuthActionResult>;
     resetPassword: (email: string, pass: string) => Promise<AuthActionResult>;
     logout: () => void;

@@ -16,6 +16,12 @@ const DEFAULT_USER: AuthUser = {
     role: 'Administrator',
 };
 
+const PUBLIC_USER: AuthUser = {
+    email: 'community@geofirenet.local',
+    name: 'Community User',
+    role: 'Public User',
+};
+
 const DEFAULT_PASSWORD = 'GeoFireNet123';
 const USERS_KEY = 'geofirenet_users';
 const AUTH_KEY = 'geofirenet_auth_session';
@@ -58,7 +64,10 @@ const resolveUser = (email: string): AuthUser | null => {
         };
     }
 
-    return normalizeEmail(email) === DEFAULT_USER.email ? DEFAULT_USER : null;
+    if (normalizeEmail(email) === DEFAULT_USER.email) return DEFAULT_USER;
+    if (normalizeEmail(email) === PUBLIC_USER.email) return PUBLIC_USER;
+
+    return null;
 };
 
 const hashPassword = async (password: string) => {
@@ -121,6 +130,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         return false;
+    };
+
+    const loginAsPublicUser = () => {
+        const session = { email: PUBLIC_USER.email, rememberMe: false };
+        writeAuthSession(session);
+        setAuthSession(session);
     };
 
     const createFirstUser = async (
@@ -197,6 +212,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 user,
                 hasLocalUser: localUserCount > 0,
                 login,
+                loginAsPublicUser,
                 createFirstUser,
                 resetPassword,
                 logout,

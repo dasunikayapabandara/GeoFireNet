@@ -6,7 +6,7 @@ import '../styles/Login.css';
 type LoginMode = 'login' | 'first-user' | 'forgot';
 
 const Login: React.FC = () => {
-    const { login, createFirstUser, resetPassword, hasLocalUser } = useAuth();
+    const { login, loginAsPublicUser, createFirstUser, resetPassword, hasLocalUser } = useAuth();
     const [mode, setMode] = useState<LoginMode>('login');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -240,8 +240,14 @@ const Login: React.FC = () => {
                     </button>
                 </form>
 
+                {mode === 'login' && (
+                    <button type="button" className="public-login-button" onClick={loginAsPublicUser}>
+                        Continue as Public User
+                    </button>
+                )}
+
                 <div className="login-footer">
-                    <p>Authorized operator access only</p>
+                    <p>Operators can sign in above. Community users can open the public portal.</p>
                 </div>
             </div>
         </div>
