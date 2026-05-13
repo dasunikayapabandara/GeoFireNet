@@ -19,6 +19,7 @@ export interface AuthContextType {
     loginAsPublicUser: () => void;
     createFirstUser: (name: string, email: string, pass: string, rememberMe: boolean) => Promise<AuthActionResult>;
     resetPassword: (email: string, pass: string) => Promise<AuthActionResult>;
+    changePassword: (currentPass: string, nextPass: string) => Promise<AuthActionResult>;
     logout: () => void;
 }
 

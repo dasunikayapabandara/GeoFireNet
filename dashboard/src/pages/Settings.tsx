@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/useAuth';
 import '../styles/Settings.css';
 
@@ -43,9 +43,14 @@ const loadStoredSettings = (): SettingsState => {
 };
 
 const Settings: React.FC = () => {
-    const { logout, user } = useAuth();
+    const { changePassword, logout, user } = useAuth();
     const [settings, setSettings] = useState<SettingsState>(loadStoredSettings);
     const [statusMessage, setStatusMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+    const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordSaving, setPasswordSaving] = useState(false);
     const displayName = user?.name ?? 'Fire Risk Analyst';
     const displayEmail = user?.email ?? 'admin@geofirenet.com';
     const initials = displayName
@@ -59,14 +64,15 @@ const Settings: React.FC = () => {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
 
+    useEffect(() => {
+        if (settings.theme === 'light') document.documentElement.classList.add('light-theme');
+        else document.documentElement.classList.remove('light-theme');
+    }, [settings.theme]);
+
     const handleSave = () => {
         try {
             localStorage.setItem('geofirenet_settings', JSON.stringify(settings));
             
-            // Apply Visual Theme Live
-            if (settings.theme === 'light') document.documentElement.classList.add('light-theme');
-            else document.documentElement.classList.remove('light-theme');
-
             setStatusMessage({ text: 'Settings saved successfully!', type: 'success' });
             setTimeout(() => setStatusMessage(null), 3000);
         } catch {
@@ -85,6 +91,37 @@ const Settings: React.FC = () => {
             setStatusMessage({ text: 'Settings reset to defaults.', type: 'success' });
             setTimeout(() => setStatusMessage(null), 3000);
         }
+    };
+
+    const handleChangePassword = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setStatusMessage(null);
+
+        if (newPassword.length < 8) {
+            setStatusMessage({ text: 'New password must contain at least 8 characters.', type: 'error' });
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setStatusMessage({ text: 'New password and confirmation do not match.', type: 'error' });
+            return;
+        }
+
+        setPasswordSaving(true);
+        const result = await changePassword(currentPassword, newPassword);
+        setPasswordSaving(false);
+
+        if (!result.success) {
+            setStatusMessage({ text: result.message ?? 'Unable to change password.', type: 'error' });
+            return;
+        }
+
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setIsPasswordFormOpen(false);
+        setStatusMessage({ text: result.message ?? 'Password changed successfully.', type: 'success' });
+        setTimeout(() => setStatusMessage(null), 3000);
     };
 
     return (
@@ -271,8 +308,52 @@ const Settings: React.FC = () => {
                         </label>
                     </div>
                     <div className="form-actions mt-4">
-                        <button className="btn btn-outline" onClick={() => setStatusMessage({ text: 'Password changes are not enabled in this build.', type: 'error' })}>Change Password</button>
+                        <button className="btn btn-outline" onClick={() => setIsPasswordFormOpen((current) => !current)}>
+                            {isPasswordFormOpen ? 'Cancel Password Change' : 'Change Password'}
+                        </button>
                     </div>
+                    {isPasswordFormOpen && (
+                        <form className="password-change-form mt-4" onSubmit={handleChangePassword}>
+                            <div className="form-group">
+                                <label htmlFor="current-password">Current Password</label>
+                                <input
+                                    id="current-password"
+                                    type="password"
+                                    className="input-text"
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="new-password">New Password</label>
+                                <input
+                                    id="new-password"
+                                    type="password"
+                                    className="input-text"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    required
+                                    minLength={8}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="confirm-new-password">Confirm New Password</label>
+                                <input
+                                    id="confirm-new-password"
+                                    type="password"
+                                    className="input-text"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                    minLength={8}
+                                />
+                            </div>
+                            <button className="btn btn-primary" type="submit" disabled={passwordSaving}>
+                                {passwordSaving ? 'Saving...' : 'Save New Password'}
+                            </button>
+                        </form>
+                    )}
                 </div>
 
             </div>

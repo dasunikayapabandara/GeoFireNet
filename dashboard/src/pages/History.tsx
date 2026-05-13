@@ -77,8 +77,8 @@ const History: React.FC = () => {
                                         </span>
                                     </td>
                                     <td style={{ padding: '1rem 0.5rem' }}>{(log.risk_probability * 100).toFixed(1)}%</td>
-                                    <td style={{ padding: '1rem 0.5rem', color: '#94a3b8', fontSize: '0.9rem' }}>{log.primary_drivers || 'None'}</td>
-                                    <td style={{ padding: '1rem 0.5rem', color: '#94a3b8', fontSize: '0.9rem' }}>{historySourceLabel(log.source)}</td>
+                                    <td style={{ padding: '1rem 0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{log.primary_drivers || 'None'}</td>
+                                    <td style={{ padding: '1rem 0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{historySourceLabel(log.source)}</td>
                                 </tr>
                             ))}
                         </tbody>

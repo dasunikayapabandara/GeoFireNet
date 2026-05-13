@@ -43,7 +43,7 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border-subtle);
     padding-bottom: 1rem;
 }
 
@@ -75,8 +75,8 @@
 
 .image-drop-zone {
     min-height: 420px;
-    background: #0f172a;
-    border: 1px dashed #475569;
+    background: var(--bg-primary);
+    border: 1px dashed var(--border-strong);
     border-radius: 0.5rem;
     overflow: hidden;
     position: relative;
@@ -100,9 +100,9 @@
     right: 0.75rem;
     padding: 0.5rem 0.75rem;
     background: rgba(15, 23, 42, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 0.5rem;
-    color: #e2e8f0;
+    color: #f8fafc;
     font-size: 0.85rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -117,7 +117,7 @@
     justify-content: center;
     gap: 0.75rem;
     text-align: center;
-    color: #94a3b8;
+    color: var(--text-secondary);
     padding: 2rem;
 }
 
@@ -136,7 +136,7 @@
 
 .image-risk-summary>div {
     padding: 1rem;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--bg-soft);
     border-radius: 0.5rem;
     border-top: 4px solid #22c55e;
 }
@@ -156,13 +156,13 @@
 .summary-label {
     display: block;
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--text-secondary);
     text-transform: uppercase;
     margin-bottom: 0.35rem;
 }
 
 .image-risk-summary strong {
-    color: #f8fafc;
+    color: var(--text-primary);
     font-size: 1.15rem;
 }
 
@@ -176,9 +176,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    background: #1e293b;
-    border: 1px solid #334155;
-    color: #e2e8f0;
+    background: var(--bg-soft);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
     padding: 0.5rem 0.75rem;
     border-radius: 999px;
     font-size: 0.85rem;
@@ -191,26 +191,26 @@
 }
 
 .visual-metric {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--bg-soft);
+    border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
     padding: 0.75rem;
 }
 
 .visual-metric span {
     display: block;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 0.8rem;
     margin-bottom: 0.35rem;
 }
 
 .visual-metric strong {
-    color: #f8fafc;
+    color: var(--text-primary);
 }
 
 .metric-bar {
     height: 6px;
-    background: #0f172a;
+    background: var(--bg-primary);
     border-radius: 999px;
     overflow: hidden;
     margin-top: 0.65rem;
@@ -223,21 +223,21 @@
 }
 
 .analysis-section {
-    background: rgba(0, 0, 0, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--bg-soft);
+    border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
     padding: 1rem;
 }
 
 .analysis-section h4 {
     margin: 0 0 0.75rem 0;
-    color: #f8fafc;
+    color: var(--text-primary);
 }
 
 .analysis-section ul {
     margin: 0;
     padding-left: 1.1rem;
-    color: #cbd5e1;
+    color: var(--text-secondary);
 }
 
 .analysis-section li {
@@ -251,14 +251,14 @@
 }
 
 .control-phase {
-    background: #0f172a;
-    border: 1px solid #334155;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
     padding: 0.9rem;
 }
 
 .control-phase strong {
-    color: #f8fafc;
+    color: var(--text-primary);
     display: block;
     margin-bottom: 0.5rem;
 }
@@ -271,10 +271,10 @@
 
 .resource-chip-list span {
     padding: 0.35rem 0.55rem;
-    background: #1e293b;
-    border: 1px solid #334155;
+    background: var(--bg-soft);
+    border: 1px solid var(--border-subtle);
     border-radius: 999px;
-    color: #e2e8f0;
+    color: var(--text-primary);
     font-size: 0.8rem;
 }
 
@@ -287,7 +287,7 @@
 
 .watchout-panel p {
     margin: 0.25rem 0;
-    color: #fdba74;
+    color: var(--accent-risk-high);
     font-size: 0.85rem;
 }
 
@@ -447,22 +447,22 @@ input[type=range] {
 }
 
 .badge-low {
-    background: linear-gradient(145deg, rgba(34, 197, 94, 0.1), rgba(0, 0, 0, 0.2));
+    background: linear-gradient(145deg, rgba(34, 197, 94, 0.12), var(--bg-soft));
     border-top: 4px solid #22c55e;
 }
 
 .badge-moderate {
-    background: linear-gradient(145deg, rgba(234, 179, 8, 0.1), rgba(0, 0, 0, 0.2));
+    background: linear-gradient(145deg, rgba(234, 179, 8, 0.12), var(--bg-soft));
     border-top: 4px solid #eab308;
 }
 
 .badge-high {
-    background: linear-gradient(145deg, rgba(249, 115, 22, 0.1), rgba(0, 0, 0, 0.2));
+    background: linear-gradient(145deg, rgba(249, 115, 22, 0.12), var(--bg-soft));
     border-top: 4px solid #f97316;
 }
 
 .badge-extreme {
-    background: linear-gradient(145deg, rgba(239, 68, 68, 0.2), rgba(0, 0, 0, 0.4));
+    background: linear-gradient(145deg, rgba(239, 68, 68, 0.16), var(--bg-soft));
     border-top: 4px solid #ef4444;
 }
 

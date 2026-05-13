@@ -107,6 +107,16 @@ const writeAuthSession = (session: StoredAuthSession) => {
     targetStorage.setItem(AUTH_KEY, JSON.stringify(session));
 };
 
+const verifyPassword = async (email: string, pass: string) => {
+    const normalizedEmail = normalizeEmail(email);
+    const storedUser = findStoredUser(normalizedEmail);
+    const passwordHash = await hashPassword(pass);
+    const isStoredUserMatch = storedUser?.passwordHash === passwordHash;
+    const isDefaultUserMatch = !storedUser && normalizedEmail === DEFAULT_USER.email && pass === DEFAULT_PASSWORD;
+
+    return { isValid: Boolean(isStoredUserMatch || isDefaultUserMatch), storedUser };
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [authSession, setAuthSession] = useState<StoredAuthSession | null>(readStoredAuth);
     const [localUserCount, setLocalUserCount] = useState(() => getStoredUsers().length);
@@ -117,12 +127,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await pause();
 
         const normalizedEmail = normalizeEmail(email);
-        const storedUser = findStoredUser(normalizedEmail);
-        const passwordHash = await hashPassword(pass);
-        const isStoredUserMatch = storedUser?.passwordHash === passwordHash;
-        const isDefaultUserMatch = normalizedEmail === DEFAULT_USER.email && pass === DEFAULT_PASSWORD;
+        const { isValid } = await verifyPassword(normalizedEmail, pass);
 
-        if (isStoredUserMatch || isDefaultUserMatch) {
+        if (isValid) {
             const session = { email: normalizedEmail, rememberMe };
             writeAuthSession(session);
             setAuthSession(session);
@@ -198,6 +205,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { success: true, message: 'Password updated. Sign in with your new password.' };
     };
 
+    const changePassword = async (currentPass: string, nextPass: string): Promise<AuthActionResult> => {
+        await pause();
+
+        if (!authSession || !user) {
+            return { success: false, message: 'Sign in before changing your password.' };
+        }
+
+        if (normalizeEmail(user.email) === PUBLIC_USER.email) {
+            return { success: false, message: 'Public users do not have editable passwords.' };
+        }
+
+        const normalizedEmail = normalizeEmail(authSession.email);
+        const { isValid, storedUser } = await verifyPassword(normalizedEmail, currentPass);
+
+        if (!isValid) {
+            return { success: false, message: 'Current password is incorrect.' };
+        }
+
+        const users = getStoredUsers();
+        const existingUserIndex = users.findIndex((stored) => normalizeEmail(stored.email) === normalizedEmail);
+        const updatedUser: StoredUser = {
+            email: normalizedEmail,
+            name: storedUser?.name ?? user.name,
+            role: storedUser?.role ?? user.role,
+            passwordHash: await hashPassword(nextPass),
+        };
+
+        if (existingUserIndex >= 0) {
+            users[existingUserIndex] = updatedUser;
+        } else {
+            users.push(updatedUser);
+        }
+
+        saveStoredUsers(users);
+        setLocalUserCount(users.length);
+
+        return { success: true, message: 'Password changed successfully.' };
+    };
+
     const logout = () => {
         localStorage.removeItem(AUTH_KEY);
         localStorage.removeItem(LEGACY_AUTH_KEY);
@@ -215,6 +261,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 loginAsPublicUser,
                 createFirstUser,
                 resetPassword,
+                changePassword,
                 logout,
             }}
         >

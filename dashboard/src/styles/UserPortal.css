@@ -33,7 +33,7 @@
 .portal-user-card {
     min-width: 280px;
     background: var(--bg-secondary);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
     padding: 1rem;
     display: flex;
@@ -63,7 +63,7 @@
 .portal-filter-card {
     min-width: 280px;
     background: var(--bg-secondary);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
     padding: 1rem;
     display: grid;
@@ -82,9 +82,9 @@
 .public-report-form select,
 .public-report-form textarea {
     width: 100%;
-    background: #0f172a;
+    background: var(--bg-primary);
     color: var(--text-primary);
-    border: 1px solid #334155;
+    border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
     padding: 0.75rem;
 }
@@ -98,7 +98,7 @@
 
 .user-risk-card {
     background: var(--bg-secondary);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
     padding: 1.25rem;
     border-top: 4px solid var(--accent-primary);
@@ -148,7 +148,7 @@
     height: 460px;
     overflow: hidden;
     border-radius: 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
 }
 
 .public-alert-list {
@@ -164,7 +164,7 @@
     justify-content: space-between;
     gap: 1rem;
     padding: 1rem;
-    background: #0f172a;
+    background: var(--bg-primary);
     border-radius: 0.5rem;
     border-left: 4px solid var(--accent-risk-med);
 }
@@ -226,8 +226,8 @@
 }
 
 .user-risk-entry {
-    background: #0f172a;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-subtle);
     border-left: 4px solid var(--accent-risk-med);
     border-radius: 0.5rem;
     padding: 1rem;
@@ -262,8 +262,8 @@
 .entry-risk-badge {
     flex: 0 0 auto;
     color: var(--text-primary);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-soft);
     border-radius: 999px;
     padding: 0.35rem 0.65rem;
     font-size: 0.8rem;
@@ -280,7 +280,7 @@
 }
 
 .entry-meta span {
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-subtle);
     border-radius: 999px;
     padding: 0.25rem 0.5rem;
 }
@@ -313,9 +313,9 @@
 .admin-edit-form select,
 .admin-edit-form textarea {
     width: 100%;
-    background: #0f172a;
+    background: var(--bg-primary);
     color: var(--text-primary);
-    border: 1px solid #334155;
+    border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
     padding: 0.75rem;
 }
