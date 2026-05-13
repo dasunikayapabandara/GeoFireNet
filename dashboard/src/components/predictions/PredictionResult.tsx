@@ -83,7 +83,7 @@ const PredictionResultCard: React.FC<Props> = ({ result, inputs }) => {
             </div>
 
             {/* Alert Connection Card */}
-            {(result.risk_level === 'High' || result.risk_level === 'Extreme') && (
+            {result.alert_triggered && (
                 <div className="card alert-action-card mt-4">
                     <h4>Alert Threshold Reached</h4>
                     <p className="text-muted small mb-3">

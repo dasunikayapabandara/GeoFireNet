@@ -1,4 +1,5 @@
 import { API_BASE_URL, fetchJson } from '../config/api';
+import { getAlertSeverityForScore, loadStoredSettings } from '../config/settings';
 import { getRegionalAlertFeatures, type MapLayerMode, type RiskZoneFeature } from './MapService';
 import type { PredictionInput, PredictionResult } from '../types/prediction';
 
@@ -401,6 +402,7 @@ export const RiskService = {
     },
 
     getAlerts: async (query?: LocationQuery, mode: MapLayerMode = 'predictive'): Promise<Alert[]> => {
+        const settings = loadStoredSettings();
         const params = new URLSearchParams({ limit: '50' });
         if (query?.country) params.append('country', query.country);
         let backendAlerts: Alert[] = [];
@@ -438,7 +440,15 @@ export const RiskService = {
         }
 
         const regionalAlerts = fallbackAlerts(query, mode);
-        const merged = [...backendAlerts, ...regionalAlerts];
+        const merged = [...backendAlerts, ...regionalAlerts]
+            .map((alert) => {
+                const configuredSeverity = getAlertSeverityForScore(alert.score, settings);
+                return configuredSeverity
+                    ? { ...alert, severity: configuredSeverity, title: `${configuredSeverity.toUpperCase()} Risk Alert` }
+                    : null;
+            })
+            .filter((alert): alert is Alert => Boolean(alert));
+
         return mode === 'active'
             ? merged.filter((alert) => alert.severity === 'high' || alert.severity === 'extreme')
             : merged;

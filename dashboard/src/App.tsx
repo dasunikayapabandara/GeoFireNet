@@ -14,27 +14,35 @@ import UserPortal from './pages/UserPortal';
 import Login from './pages/Login';
 import RealTimeToast from './components/RealTimeToast';
 import { useAuth } from './context/useAuth';
+import {
+  applyDashboardSettings,
+  loadStoredSettings,
+  preferredRegionToCountry,
+  SETTINGS_CHANGED_EVENT,
+  type DashboardSettings
+} from './config/settings';
 import './styles/App.css';
 
 import Footer from './components/Footer';
 
 function App() {
   const { isAuthenticated, user } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [appSettings, setAppSettings] = useState<DashboardSettings>(loadStoredSettings);
+  const [activeTab, setActiveTab] = useState<string>(() => loadStoredSettings().defaultLandingPage);
   const isAdmin = user?.role === 'Administrator';
 
   // Apply theme on first render based on saved settings
   useEffect(() => {
-    const stored = localStorage.getItem('geofirenet_settings');
-    if (stored) {
-      try {
-        if (JSON.parse(stored).theme === 'light') {
-          document.documentElement.classList.add('light-theme');
-        }
-      } catch {
-        // ignored
-      }
-    }
+    applyDashboardSettings(loadStoredSettings());
+
+    const handleSettingsChanged = (event: Event) => {
+      const nextSettings = (event as CustomEvent<DashboardSettings>).detail ?? loadStoredSettings();
+      setAppSettings(nextSettings);
+      applyDashboardSettings(nextSettings);
+    };
+
+    window.addEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+    return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
   }, []);
 
   const effectiveActiveTab = !isAdmin && activeTab === 'user' ? 'dashboard' : activeTab;
@@ -48,7 +56,7 @@ function App() {
           ? <div className="full-size-container"><UserPortal /></div>
           : <div className="full-size-container"><DashboardOverview onOpenLiveMap={() => setActiveTab('map')} /></div>;
       case 'map':
-        return <div className="full-size-container"><MapComponent /></div>;
+        return <div className="full-size-container"><MapComponent countryFilter={preferredRegionToCountry(appSettings) || undefined} /></div>;
       case 'predictions':
         return <div className="full-size-container"><Predictions /></div>;
       case 'reactive':

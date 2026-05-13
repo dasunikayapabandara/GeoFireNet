@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { RiskService, type HistoryRecord } from '../../services/RiskService';
+import { loadStoredSettings, refreshIntervalMs, SETTINGS_CHANGED_EVENT, type DashboardSettings } from '../../config/settings';
 
 const PredictionHistory: React.FC = () => {
     const [history, setHistory] = useState<HistoryRecord[]>([]);
     const [loading, setLoading] = useState(true);
+    const [dashboardSettings, setDashboardSettings] = useState<DashboardSettings>(loadStoredSettings);
 
     const loadHistory = async () => {
         try {
@@ -30,9 +32,18 @@ const PredictionHistory: React.FC = () => {
 
     useEffect(() => {
         loadHistory();
-        // Poll briefly
-        const intv = setInterval(loadHistory, 10000);
+        const intv = setInterval(loadHistory, refreshIntervalMs(dashboardSettings));
         return () => clearInterval(intv);
+    }, [dashboardSettings]);
+
+    useEffect(() => {
+        const handleSettingsChanged = (event: Event) => {
+            const nextSettings = (event as CustomEvent<DashboardSettings>).detail ?? loadStoredSettings();
+            setDashboardSettings(nextSettings);
+        };
+
+        window.addEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+        return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
     }, []);
 
     if (loading) return <div className="card mt-4 p-4 text-center">Loading recent history...</div>;

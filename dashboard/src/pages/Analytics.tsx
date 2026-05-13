@@ -25,6 +25,7 @@ import {
     type HistoryRecord,
     type RiskChartData
 } from '../services/RiskService';
+import { loadStoredSettings, preferredRegionToCountry, SETTINGS_CHANGED_EVENT, type DashboardSettings } from '../config/settings';
 import '../styles/Analytics.css';
 
 ChartJS.register(
@@ -65,7 +66,7 @@ const chartOptions = {
 
 const Analytics: React.FC = () => {
     const [timeRange, setTimeRange] = useState('7d');
-    const [region, setRegion] = useState('');
+    const [region, setRegion] = useState(() => preferredRegionToCountry(loadStoredSettings()));
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [summary, setSummary] = useState<GlobalSummary | null>(null);
@@ -110,6 +111,16 @@ const Analytics: React.FC = () => {
         }, 0);
         return () => window.clearTimeout(initialFetch);
     }, [fetchData]);
+
+    useEffect(() => {
+        const handleSettingsChanged = (event: Event) => {
+            const nextSettings = (event as CustomEvent<DashboardSettings>).detail ?? loadStoredSettings();
+            setRegion(preferredRegionToCountry(nextSettings));
+        };
+
+        window.addEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+        return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+    }, []);
 
     const distData = useMemo(() => {
         if (!summary) return null;

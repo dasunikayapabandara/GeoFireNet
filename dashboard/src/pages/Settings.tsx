@@ -1,50 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/useAuth';
+import {
+    applyDashboardSettings,
+    defaultSettings,
+    emitSettingsChanged,
+    loadStoredSettings,
+    normalizeSettings,
+    saveStoredSettings,
+    type DashboardSettings
+} from '../config/settings';
 import '../styles/Settings.css';
-
-interface SettingsState {
-    theme: 'dark' | 'light';
-    layout: 'standard' | 'compact';
-    alertsEnabled: boolean;
-    alertHighThreshold: number;
-    alertExtremeThreshold: number;
-    notificationSounds: boolean;
-    showModerateAlerts: boolean;
-    defaultLandingPage: string;
-    refreshInterval: number;
-    preferredRegion: string;
-    stayLoggedIn: boolean;
-}
-
-const defaultSettings: SettingsState = {
-    theme: 'dark',
-    layout: 'standard',
-    alertsEnabled: true,
-    alertHighThreshold: 75,
-    alertExtremeThreshold: 90,
-    notificationSounds: true,
-    showModerateAlerts: false,
-    defaultLandingPage: 'dashboard',
-    refreshInterval: 30,
-    preferredRegion: 'Global',
-    stayLoggedIn: true,
-};
-
-const loadStoredSettings = (): SettingsState => {
-    const stored = localStorage.getItem('geofirenet_settings');
-    if (!stored) return defaultSettings;
-
-    try {
-        return { ...defaultSettings, ...JSON.parse(stored) as Partial<SettingsState> };
-    } catch (error) {
-        console.error("Failed to parse settings", error);
-        return defaultSettings;
-    }
-};
 
 const Settings: React.FC = () => {
     const { changePassword, logout, user } = useAuth();
-    const [settings, setSettings] = useState<SettingsState>(loadStoredSettings);
+    const [settings, setSettings] = useState<DashboardSettings>(loadStoredSettings);
     const [statusMessage, setStatusMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
     const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
@@ -60,18 +29,19 @@ const Settings: React.FC = () => {
         .map((part) => part[0]?.toUpperCase())
         .join('') || 'FA';
 
-    const handleChange = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
-        setSettings(prev => ({ ...prev, [key]: value }));
+    const handleChange = <K extends keyof DashboardSettings>(key: K, value: DashboardSettings[K]) => {
+        setSettings(prev => normalizeSettings({ ...prev, [key]: value }));
     };
 
     useEffect(() => {
-        if (settings.theme === 'light') document.documentElement.classList.add('light-theme');
-        else document.documentElement.classList.remove('light-theme');
-    }, [settings.theme]);
+        applyDashboardSettings(settings);
+    }, [settings]);
 
     const handleSave = () => {
         try {
-            localStorage.setItem('geofirenet_settings', JSON.stringify(settings));
+            const savedSettings = saveStoredSettings(settings);
+            applyDashboardSettings(savedSettings);
+            emitSettingsChanged(savedSettings);
             
             setStatusMessage({ text: 'Settings saved successfully!', type: 'success' });
             setTimeout(() => setStatusMessage(null), 3000);
@@ -83,10 +53,9 @@ const Settings: React.FC = () => {
     const handleReset = () => {
         if (window.confirm("Are you sure you want to reset all settings to their default values?")) {
             setSettings(defaultSettings);
-            localStorage.setItem('geofirenet_settings', JSON.stringify(defaultSettings));
-            
-            // Apply Default Visual Theme Live
-            document.documentElement.classList.remove('light-theme');
+            const savedSettings = saveStoredSettings(defaultSettings);
+            applyDashboardSettings(savedSettings);
+            emitSettingsChanged(savedSettings);
 
             setStatusMessage({ text: 'Settings reset to defaults.', type: 'success' });
             setTimeout(() => setStatusMessage(null), 3000);
@@ -149,7 +118,6 @@ const Settings: React.FC = () => {
                         </div>
                     </div>
                     <div className="form-actions mt-4">
-                        <button className="btn btn-outline" onClick={() => setStatusMessage({ text: 'Profile editing is not enabled in this build.', type: 'error' })}>Edit Profile</button>
                         <button className="btn btn-danger" onClick={logout}>Log Out</button>
                     </div>
                 </div>
@@ -162,7 +130,7 @@ const Settings: React.FC = () => {
                         <label>Color Theme</label>
                         <select
                             value={settings.theme}
-                            onChange={(e) => handleChange('theme', e.target.value as SettingsState['theme'])}
+                            onChange={(e) => handleChange('theme', e.target.value as DashboardSettings['theme'])}
                         >
                             <option value="dark">Dark Theme (Default)</option>
                             <option value="light">Light Theme (Preview)</option>
@@ -247,7 +215,7 @@ const Settings: React.FC = () => {
                         <label>Default Landing Page</label>
                         <select
                             value={settings.defaultLandingPage}
-                            onChange={(e) => handleChange('defaultLandingPage', e.target.value)}
+                            onChange={(e) => handleChange('defaultLandingPage', e.target.value as DashboardSettings['defaultLandingPage'])}
                         >
                             <option value="dashboard">Overview</option>
                             <option value="map">Live Map</option>
@@ -259,7 +227,7 @@ const Settings: React.FC = () => {
                         <label>Primary Monitored Region</label>
                         <select
                             value={settings.preferredRegion}
-                            onChange={(e) => handleChange('preferredRegion', e.target.value)}
+                            onChange={(e) => handleChange('preferredRegion', e.target.value as DashboardSettings['preferredRegion'])}
                         >
                             <option value="Global">Project Scope (USA + Australia)</option>
                             <option value="USA">United States</option>
@@ -276,19 +244,6 @@ const Settings: React.FC = () => {
                             className="input-text"
                         />
                     </div>
-                </div>
-
-                {/* 5. System Information Section */}
-                <div className="card settings-card">
-                    <h3 className="section-title">System Status</h3>
-                    <ul className="sys-info-list text-muted small">
-                        <li><strong>Environment:</strong> Production-ready local deployment</li>
-                        <li><strong>Frontend Version:</strong> v2.1.4</li>
-                        <li><strong>Backend API Status:</strong> FastAPI health endpoint available</li>
-                        <li><strong>Database:</strong> PostgreSQL via SQLAlchemy/Alembic</li>
-                        <li><strong>Risk Scoring:</strong> Active</li>
-                        <li><strong>Last Sync:</strong> {new Date().toLocaleString()}</li>
-                    </ul>
                 </div>
 
                 {/* 6. Security Section */}

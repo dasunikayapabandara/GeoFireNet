@@ -5,6 +5,13 @@ import MapComponent from '../map/MapComponent';
 import { AlertCircle, RefreshCw, Activity, Map, RadioTower, ShieldAlert } from 'lucide-react';
 import { RiskService, type RiskMetric, type Alert, type RiskChartData } from '../../services/RiskService';
 import { API_BASE_URL, checkBackendStatus } from '../../config/api';
+import {
+    loadStoredSettings,
+    preferredRegionToCountry,
+    refreshIntervalMs,
+    SETTINGS_CHANGED_EVENT,
+    type DashboardSettings
+} from '../../config/settings';
 import '../../styles/DashboardOverview.css';
 
 interface DashboardError {
@@ -22,7 +29,8 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
     const [chartData, setChartData] = useState<RiskChartData | undefined>(undefined);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<DashboardError | null>(null);
-    const [countryFilter, setCountryFilter] = useState<string>('');
+    const [dashboardSettings, setDashboardSettings] = useState<DashboardSettings>(loadStoredSettings);
+    const [countryFilter, setCountryFilter] = useState<string>(() => preferredRegionToCountry(loadStoredSettings()));
     const [viewMode, setViewMode] = useState<'predictive' | 'active'>('predictive');
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
@@ -60,6 +68,17 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
     }, [countryFilter, viewMode]);
 
     useEffect(() => {
+        const handleSettingsChanged = (event: Event) => {
+            const nextSettings = (event as CustomEvent<DashboardSettings>).detail ?? loadStoredSettings();
+            setDashboardSettings(nextSettings);
+            setCountryFilter(preferredRegionToCountry(nextSettings));
+        };
+
+        window.addEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+        return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+    }, []);
+
+    useEffect(() => {
         // Clear old data when filters change to prevent stale views
         const initialFetch = window.setTimeout(() => {
             setMetrics([]);
@@ -70,12 +89,12 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
         
         const interval = window.setInterval(() => {
             void fetchData();
-        }, 30000); // Auto-refresh every 30s
+        }, refreshIntervalMs(dashboardSettings));
         return () => {
             window.clearTimeout(initialFetch);
             window.clearInterval(interval);
         };
-    }, [fetchData]);
+    }, [dashboardSettings, fetchData]);
 
     if (loading && metrics.length === 0) {
         return <div className="dashboard-container flex-center">

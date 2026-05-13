@@ -257,3 +257,57 @@ textarea:focus-visible {
     padding: 1rem;
   }
 }
+
+:root.compact-layout .card {
+  padding: 1rem;
+}
+
+:root.compact-layout .dashboard-container,
+:root.compact-layout .alerts-page-container,
+:root.compact-layout .analytics-container,
+:root.compact-layout .about-container,
+:root.compact-layout .reactive-container,
+:root.compact-layout .user-portal {
+  gap: 1rem;
+  padding: 1rem;
+}
+
+:root.compact-layout .p-6 {
+  padding: 1rem;
+}
+
+:root.compact-layout .metrics-grid,
+:root.compact-layout .dashboard-main-content,
+:root.compact-layout .settings-grid,
+:root.compact-layout .kpi-grid,
+:root.compact-layout .charts-grid-2,
+:root.compact-layout .charts-grid-3,
+:root.compact-layout .predictions-workbench {
+  gap: 1rem;
+}
+
+:root.compact-layout .form-group {
+  margin-bottom: 0.85rem;
+}
+
+:root.compact-layout .settings-header,
+:root.compact-layout .predictions-header,
+:root.compact-layout .analytics-header,
+:root.compact-layout .alerts-header {
+  margin-bottom: 1.2rem;
+}
+
+:root.compact-layout .section-title {
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+}
+
+:root.compact-layout .overview-map-shell,
+:root.compact-layout .image-drop-zone,
+:root.compact-layout .image-analysis-panel {
+  min-height: 320px;
+}
+
+:root.compact-layout .overview-map-shell {
+  height: 320px;
+}

@@ -5,6 +5,13 @@ import {
 } from 'lucide-react';
 import { RiskService, type Alert, type AlertSeverity, type AlertStatus, type AlertsSummary } from '../services/RiskService';
 import { useAuth } from '../context/useAuth';
+import {
+    loadStoredSettings,
+    preferredRegionToCountry,
+    refreshIntervalMs,
+    SETTINGS_CHANGED_EVENT,
+    type DashboardSettings
+} from '../config/settings';
 import '../styles/Alerts.css';
 
 const emptySummary: AlertsSummary = {
@@ -22,7 +29,8 @@ const Alerts: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [levelFilter, setLevelFilter] = useState<AlertSeverity | ''>('');
     const [statusFilter, setStatusFilter] = useState<AlertStatus | ''>('active');
-    const [regionFilter, setRegionFilter] = useState('');
+    const [dashboardSettings, setDashboardSettings] = useState<DashboardSettings>(loadStoredSettings);
+    const [regionFilter, setRegionFilter] = useState(() => preferredRegionToCountry(loadStoredSettings()));
 
     // Modal Details State
     const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
@@ -44,12 +52,23 @@ const Alerts: React.FC = () => {
         // Polling complements WebSocket notifications and keeps filtered views current.
         const interval = window.setInterval(() => {
             void fetchData();
-        }, 10000);
+        }, refreshIntervalMs(dashboardSettings));
         return () => {
             window.clearTimeout(initialFetch);
             window.clearInterval(interval);
         };
-    }, [fetchData]);
+    }, [dashboardSettings, fetchData]);
+
+    useEffect(() => {
+        const handleSettingsChanged = (event: Event) => {
+            const nextSettings = (event as CustomEvent<DashboardSettings>).detail ?? loadStoredSettings();
+            setDashboardSettings(nextSettings);
+            setRegionFilter(preferredRegionToCountry(nextSettings));
+        };
+
+        window.addEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+        return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+    }, []);
 
     // Filter Logic
     const filteredAlerts = useMemo(() => {

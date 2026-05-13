@@ -6,6 +6,7 @@ import PredictionHistory from '../components/predictions/PredictionHistory';
 import type { PredictionInput, PredictionResult } from '../types/prediction';
 import { fetchJson } from '../config/api';
 import { recordLocalRiskCheck } from '../services/RiskService';
+import { getAlertSeverityForScore, loadStoredSettings } from '../config/settings';
 import '../styles/Predictions.css';
 
 const getRiskLevel = (probability: number) => {
@@ -29,6 +30,7 @@ const buildLocalPrediction = (data: PredictionInput): PredictionResult => {
         )
     );
     const probability = Number((baselineScore / 100).toFixed(4));
+    const alertSeverity = getAlertSeverityForScore(baselineScore, loadStoredSettings());
     const drivers = [
         data.temp > 35 ? 'High Temperature' : null,
         data.wind > 60 ? 'Strong Winds' : null,
@@ -46,7 +48,7 @@ const buildLocalPrediction = (data: PredictionInput): PredictionResult => {
         baseline_level: getRiskLevel(probability),
         key_drivers: drivers.length > 0 ? drivers.slice(0, 3) : ['Normal Conditions'],
         system_status: 'SIMULATION',
-        alert_triggered: probability > 0.5,
+        alert_triggered: Boolean(alertSeverity),
         model_version: 'Local simulation fallback',
         timestamp: new Date().toISOString()
     };

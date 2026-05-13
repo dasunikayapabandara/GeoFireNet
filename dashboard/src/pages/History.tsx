@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Clock } from 'lucide-react';
 import { RiskService, type HistoryRecord } from '../services/RiskService';
+import { loadStoredSettings, refreshIntervalMs, SETTINGS_CHANGED_EVENT, type DashboardSettings } from '../config/settings';
 
 const historySourceLabel = (source?: HistoryRecord['source']) => {
     if (source === 'local') return 'Local';
@@ -11,6 +12,7 @@ const historySourceLabel = (source?: HistoryRecord['source']) => {
 const History: React.FC = () => {
     const [history, setHistory] = useState<HistoryRecord[]>([]);
     const [loading, setLoading] = useState(true);
+    const [dashboardSettings, setDashboardSettings] = useState<DashboardSettings>(loadStoredSettings);
 
     const fetchHistory = async () => {
         try {
@@ -25,8 +27,18 @@ const History: React.FC = () => {
 
     useEffect(() => {
         fetchHistory();
-        const intervalId = setInterval(fetchHistory, 10000); 
+        const intervalId = setInterval(fetchHistory, refreshIntervalMs(dashboardSettings));
         return () => clearInterval(intervalId);
+    }, [dashboardSettings]);
+
+    useEffect(() => {
+        const handleSettingsChanged = (event: Event) => {
+            const nextSettings = (event as CustomEvent<DashboardSettings>).detail ?? loadStoredSettings();
+            setDashboardSettings(nextSettings);
+        };
+
+        window.addEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
+        return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChanged);
     }, []);
 
     if (loading && history.length === 0) return <div className="p-6"><h3>Loading risk history...</h3></div>;
