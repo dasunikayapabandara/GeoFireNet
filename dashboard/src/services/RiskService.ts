@@ -1,5 +1,6 @@
 import { API_BASE_URL, fetchJson } from '../config/api';
 import { getRegionalAlertFeatures, type MapLayerMode, type RiskZoneFeature } from './MapService';
+import type { PredictionInput, PredictionResult } from '../types/prediction';
 
 // Shared Types
 export interface LocationQuery {
@@ -10,6 +11,7 @@ export interface LocationQuery {
 export type RiskLevel = 'Low' | 'Moderate' | 'High' | 'Extreme';
 export type AlertSeverity = 'moderate' | 'high' | 'extreme';
 export type AlertStatus = 'active' | 'resolved' | 'acknowledged';
+export type HistorySource = 'backend' | 'local' | 'reference';
 
 export interface RiskMetric {
     title: string;
@@ -77,6 +79,7 @@ export interface HistoryRecord {
     primary_drivers: string | null;
     location: BackendLocation | null;
     weather_input: BackendWeatherInput;
+    source?: HistorySource;
 }
 
 export interface PredictionSummary {
@@ -246,6 +249,119 @@ const normalizeStatus = (status: string): AlertStatus => {
     return 'active';
 };
 
+const LOCAL_HISTORY_KEY = 'geofirenet_local_risk_history';
+
+const canUseLocalStorage = () => typeof window !== 'undefined' && Boolean(window.localStorage);
+
+const matchesHistoryQuery = (item: HistoryRecord, query?: LocationQuery) => {
+    if (query?.country && item.location?.country !== query.country) return false;
+    if (query?.admin_region && item.location?.admin_region !== query.admin_region) return false;
+    return query?.country ? true : isProjectCountry(item.location?.country);
+};
+
+const sortHistory = (items: HistoryRecord[], limit: number) =>
+    [...items]
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, limit);
+
+const readLocalHistory = (): HistoryRecord[] => {
+    if (!canUseLocalStorage()) return [];
+
+    try {
+        const raw = window.localStorage.getItem(LOCAL_HISTORY_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw) as HistoryRecord[];
+        return Array.isArray(parsed)
+            ? parsed.map((item) => ({
+                ...item,
+                risk_level: titleCaseRiskLevel(item.risk_level),
+                risk_probability: Number(item.risk_probability || 0),
+                primary_drivers: item.primary_drivers ?? null,
+                source: 'local'
+            }))
+            : [];
+    } catch {
+        window.localStorage.removeItem(LOCAL_HISTORY_KEY);
+        return [];
+    }
+};
+
+const writeLocalHistory = (items: HistoryRecord[]) => {
+    if (!canUseLocalStorage()) return;
+    window.localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(sortHistory(items, 50)));
+};
+
+const fallbackHistory = (query?: LocationQuery, limit = 12): HistoryRecord[] =>
+    getProjectAlertFeatures(query)
+        .slice(0, limit)
+        .map((feature, index) => {
+            const id = -900000 - index;
+            const timestamp = new Date(Date.now() - (index + 1) * 3 * 60 * 60 * 1000).toISOString();
+            const riskLevel = titleCaseRiskLevel(feature.properties.riskLevel);
+            const coordinates = feature.geometry.coordinates;
+
+            return {
+                id,
+                timestamp,
+                risk_level: riskLevel,
+                risk_probability: Number((riskLevelScore(riskLevel) / 100).toFixed(2)),
+                primary_drivers: 'Regional reference layer, heat stress, vegetation dryness',
+                location: {
+                    id,
+                    name: feature.properties.name,
+                    continent: null,
+                    country: feature.properties.country,
+                    admin_region: feature.properties.name,
+                    local_region: null,
+                    latitude: coordinates[1],
+                    longitude: coordinates[0]
+                },
+                weather_input: {
+                    id,
+                    temp: feature.properties.temperature,
+                    humidity: feature.properties.humidity,
+                    wind: feature.properties.riskLevel === 'extreme' ? 58 : feature.properties.riskLevel === 'high' ? 42 : 26,
+                    veg_moisture: feature.properties.riskLevel === 'extreme' ? 0.1 : feature.properties.riskLevel === 'high' ? 0.22 : 0.38
+                },
+                source: 'reference'
+            };
+        });
+
+export const recordLocalRiskCheck = (input: PredictionInput, result: PredictionResult) => {
+    const id = -Math.round(Date.now() + Math.random() * 1000);
+    const record: HistoryRecord = {
+        id,
+        timestamp: result.timestamp || new Date().toISOString(),
+        risk_level: titleCaseRiskLevel(result.risk_level),
+        risk_probability: Number(result.risk_probability || 0),
+        primary_drivers: result.key_drivers.length > 0 ? result.key_drivers.join(', ') : null,
+        location: {
+            id,
+            name: `${input.admin_region}, ${input.country}`,
+            continent: null,
+            country: input.country,
+            admin_region: input.admin_region,
+            local_region: null,
+            latitude: null,
+            longitude: null
+        },
+        weather_input: {
+            id,
+            temp: input.temp,
+            humidity: input.humidity,
+            wind: input.wind,
+            veg_moisture: input.veg_moisture
+        },
+        source: 'local'
+    };
+
+    writeLocalHistory([record, ...readLocalHistory()]);
+};
+
+export const deleteLocalHistoryRecord = (id: number) => {
+    writeLocalHistory(readLocalHistory().filter((item) => item.id !== id));
+};
+
 export const RiskService = {
     getMetrics: async (query?: LocationQuery, mode: MapLayerMode = 'predictive'): Promise<RiskMetric[]> => {
         try {
@@ -407,15 +523,39 @@ export const RiskService = {
         return fetchJson<GlobalSummary>(`/analytics/global_summary${suffix}`);
     },
 
-    getHistory: async (query?: LocationQuery): Promise<HistoryRecord[]> => {
-        const params = new URLSearchParams({ limit: '50' });
+    getHistory: async (query?: LocationQuery, limit = 50): Promise<HistoryRecord[]> => {
+        const params = new URLSearchParams({ limit: limit.toString() });
         if (query?.country) params.append('country', query.country);
         if (query?.admin_region) params.append('admin_region', query.admin_region);
-        const history = await fetchJson<HistoryRecord[]>(`/history?${params.toString()}`);
-        return history.filter((item) => query?.country
-            ? item.location?.country === query.country
-            : isProjectCountry(item.location?.country)
-        );
+        const localHistory = readLocalHistory().filter((item) => matchesHistoryQuery(item, query));
+        let backendHistory: HistoryRecord[] = [];
+
+        try {
+            const history = await fetchJson<HistoryRecord[]>(`/history?${params.toString()}`);
+            backendHistory = history
+                .filter((item) => matchesHistoryQuery(item, query))
+                .map((item) => ({ ...item, risk_level: titleCaseRiskLevel(item.risk_level), source: 'backend' }));
+        } catch (error) {
+            console.warn('Unable to load backend history. Using local or reference history.', error);
+        }
+
+        const merged = sortHistory([...localHistory, ...backendHistory], limit);
+        return merged.length > 0 ? merged : fallbackHistory(query, limit);
+    },
+
+    deleteHistoryRecord: async (id: number): Promise<boolean> => {
+        if (id < 0) {
+            deleteLocalHistoryRecord(id);
+            return true;
+        }
+
+        try {
+            await fetchJson(`/history/${id}`, { method: 'DELETE' });
+            return true;
+        } catch (error) {
+            console.error('Failed to delete history item', error);
+            return false;
+        }
     },
 
     getActiveDetections: async (query?: LocationQuery): Promise<ActiveDetectionLog[]> => {

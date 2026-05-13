@@ -5,17 +5,21 @@
     justify-content: center;
     align-items: flex-start;
     background-color: var(--bg-primary);
-    background-image: radial-gradient(circle at center, rgba(249, 115, 22, 0.05) 0%, transparent 50%);
+    background-image:
+        linear-gradient(135deg, rgba(45, 212, 191, 0.08), transparent 35%),
+        linear-gradient(225deg, rgba(249, 115, 22, 0.08), transparent 35%);
     font-family: inherit;
     overflow-y: auto;
     padding: 2rem 1rem;
 }
 
 .login-card {
-    background-color: var(--bg-secondary);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
+        var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-lg);
     width: calc(100% - 2rem);
     max-width: 440px;
     padding: 2.5rem;
@@ -32,11 +36,11 @@
 }
 
 .logo-container {
-    background-color: rgba(249, 115, 22, 0.1);
+    background-color: rgba(249, 115, 22, 0.12);
     padding: 1rem;
-    border-radius: 50%;
+    border-radius: 0.75rem;
     margin-bottom: 1rem;
-    border: 1px solid rgba(249, 115, 22, 0.2);
+    border: 1px solid rgba(249, 115, 22, 0.24);
 }
 
 .login-header h1 {
@@ -50,7 +54,7 @@
     font-size: 0.875rem;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     font-weight: 600;
     margin: 0;
     text-align: center;
@@ -106,7 +110,7 @@
 .input-group input {
     width: 100%;
     background-color: var(--bg-tertiary);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-subtle);
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
     color: var(--text-primary);
@@ -206,8 +210,8 @@
 }
 
 .login-button {
-    background-color: var(--accent-risk-high);
-    color: white;
+    background-color: var(--accent-primary);
+    color: #052f2b;
     border: none;
     padding: 0.875rem;
     border-radius: 0.5rem;
@@ -219,7 +223,7 @@
 }
 
 .login-button:hover:not(:disabled) {
-    background-color: #ea580c;
+    background-color: var(--accent-hover);
 }
 
 .login-button:disabled {
@@ -232,7 +236,7 @@
     width: 100%;
     background: transparent;
     color: var(--text-primary);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    border: 1px solid var(--border-strong);
     padding: 0.875rem;
     border-radius: 0.5rem;
     font-size: 0.95rem;
@@ -242,8 +246,8 @@
 }
 
 .public-login-button:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.28);
+    background: var(--bg-soft);
+    border-color: var(--border-strong);
 }
 
 .login-footer {
@@ -252,7 +256,7 @@
     color: var(--text-secondary);
     font-size: 0.75rem;
     padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--border-subtle);
 }
 
 @media (max-width: 520px) {

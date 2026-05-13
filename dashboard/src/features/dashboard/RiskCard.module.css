@@ -1,7 +1,12 @@
 .riskCard {
     border-left-width: 4px;
     border-left-style: solid;
-    transition: all 0.2s ease;
+    min-height: 140px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.riskCard:hover {
+    transform: translateY(-2px);
 }
 
 .low {
@@ -24,20 +29,21 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    gap: 1rem;
 }
 
 .title {
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
     margin: 0;
 }
 
 .badge {
     font-size: 0.75rem;
-    padding: 2px 6px;
+    padding: 0.2rem 0.5rem;
     border-radius: 4px;
     text-transform: capitalize;
-    font-weight: 500;
+    font-weight: 800;
 }
 
 .badgeLow {
@@ -64,11 +70,12 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
+    gap: 1rem;
     margin-top: 1rem;
 }
 
 .value {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1;
@@ -79,6 +86,7 @@
     align-items: center;
     gap: 4px;
     font-size: 0.875rem;
+    text-align: right;
 }
 
 .trendText {

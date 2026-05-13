@@ -110,12 +110,12 @@ const PredictionForm: React.FC<Props> = ({ onPredict, onReset, loading }) => {
 
                 <div className="form-group slide-group">
                     <div className="slide-label">
-                        <label>Vegetation Moisture (0-1)</label>
-                        <span>{formData.veg_moisture.toFixed(2)}</span>
-                    </div>
-                    <input type="range" min="0" max="1" step="0.05" value={formData.veg_moisture} onChange={(e) => handleChange('veg_moisture', Number(e.target.value))} />
-                    <small className="help-text">Local dead fuel moisture index</small>
+                    <label>Vegetation Moisture (0-1)</label>
+                    <span>{formData.veg_moisture.toFixed(2)}</span>
                 </div>
+                <input type="range" min="0" max="1" step="0.05" value={formData.veg_moisture} onChange={(e) => handleChange('veg_moisture', Number(e.target.value))} />
+                <small className="help-text">Lower values mean drier vegetation</small>
+            </div>
 
                 {/* Geography Variables */}
                 <div className="form-group geo-group mt-4">
@@ -143,7 +143,7 @@ const PredictionForm: React.FC<Props> = ({ onPredict, onReset, loading }) => {
                 <div className="form-actions form-full-row">
                     <button type="button" onClick={handleReset} className="btn btn-outline" disabled={loading}>Reset</button>
                     <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
-                        {loading ? 'Executing ML Inference...' : 'Run Prediction Engine'}
+                        {loading ? 'Calculating...' : 'Calculate Risk'}
                     </button>
                 </div>
 

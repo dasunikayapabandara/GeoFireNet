@@ -155,7 +155,7 @@ const Settings: React.FC = () => {
                     <div className="form-group row-align">
                         <div>
                             <label>Enable Automated Alerts</label>
-                            <p className="text-muted small">Allow the predictive model to spawn actionable DB alerts.</p>
+                            <p className="text-muted small">Allow high-risk checks to create database alerts.</p>
                         </div>
                         <label className="toggle-switch">
                             <input
@@ -249,7 +249,7 @@ const Settings: React.FC = () => {
                         <li><strong>Frontend Version:</strong> v2.1.4</li>
                         <li><strong>Backend API Status:</strong> FastAPI health endpoint available</li>
                         <li><strong>Database:</strong> PostgreSQL via SQLAlchemy/Alembic</li>
-                        <li><strong>ML Model Status:</strong> Active (RandomForestClassifier)</li>
+                        <li><strong>Risk Scoring:</strong> Active</li>
                         <li><strong>Last Sync:</strong> {new Date().toLocaleString()}</li>
                     </ul>
                 </div>

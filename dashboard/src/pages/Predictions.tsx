@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 import PredictionForm from '../components/predictions/PredictionForm';
 import PredictionResultCard from '../components/predictions/PredictionResult';
 import PredictionHistory from '../components/predictions/PredictionHistory';
 import type { PredictionInput, PredictionResult } from '../types/prediction';
 import { fetchJson } from '../config/api';
+import { recordLocalRiskCheck } from '../services/RiskService';
 import '../styles/Predictions.css';
 
 const getRiskLevel = (probability: number) => {
@@ -67,7 +69,9 @@ const Predictions: React.FC = () => {
             setLastInputs(data);
         } catch (e) {
             console.warn("Prediction API unavailable. Using local simulation fallback.", e);
-            setResult(buildLocalPrediction(data));
+            const localResult = buildLocalPrediction(data);
+            recordLocalRiskCheck(data, localResult);
+            setResult(localResult);
             setLastInputs(data);
         } finally {
             setLoading(false);
@@ -82,8 +86,9 @@ const Predictions: React.FC = () => {
     return (
         <div className="predictions-page p-6">
             <div className="predictions-header">
-                <h2>Predictive Modeller</h2>
-                <p className="text-muted">Simulate environmental parameters to execute the ML pipeline and analyze risk.</p>
+                <span className="eyebrow">Scenario Assessment</span>
+                <h2>Risk Scenario Check</h2>
+                <p className="text-muted">Adjust weather and vegetation inputs to estimate wildfire risk for a selected region.</p>
             </div>
 
             <div className="predictions-workbench">
@@ -96,9 +101,9 @@ const Predictions: React.FC = () => {
                         <PredictionResultCard result={result} inputs={lastInputs} />
                     ) : (
                         <div className="card empty-state-card text-center">
-                            <span className="empty-icon">🌲</span>
-                            <h4>Awaiting Telemetry</h4>
-                            <p className="text-muted small">Select a scenario preset or manually configure weather inputs to generate a simulated inference.</p>
+                            <SlidersHorizontal className="empty-icon" size={48} />
+                            <h4>Ready for a scenario</h4>
+                            <p className="text-muted small">Choose a preset or adjust the inputs to calculate a risk estimate.</p>
                         </div>
                     )}
                 </div>

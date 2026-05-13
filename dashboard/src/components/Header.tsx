@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Flame, Bell, User, ChevronDown } from 'lucide-react';
+import { Flame, Bell, User, ChevronDown, CircleCheck } from 'lucide-react';
 import '../styles/Header.css';
 import { useAuth } from '../context/useAuth';
 
@@ -34,27 +34,31 @@ const Header: React.FC<{ setActiveTab: (tab: string) => void }> = ({ setActiveTa
 
     return (
         <header className="header">
-            <div className="header-logo" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
+            <button className="header-logo" onClick={handleLogoClick} aria-label="Open overview">
                 <Flame className="logo-icon" size={24} color="#f97316" />
-                <h1 className="logo-text">GeoFireNet</h1>
-            </div>
+                <span className="logo-text">GeoFireNet</span>
+                <span className="system-status">
+                    <CircleCheck size={14} />
+                    Monitoring
+                </span>
+            </button>
 
             <div className="header-actions">
-                <button className="icon-btn" aria-label="Notifications" onClick={() => setActiveTab('alerts')}>
+                <button className="icon-btn" aria-label="Open alerts" title="Open alerts" onClick={() => setActiveTab('alerts')}>
                     <Bell size={20} />
                     <span className="notification-badge">3</span>
                 </button>
                 <div className="user-profile-wrapper" ref={dropdownRef}>
-                    <div className="user-info-container" onClick={toggleDropdown}>
+                    <button className="user-info-container" onClick={toggleDropdown} aria-expanded={isDropdownOpen}>
                         <div className="avatar">
                             <User size={20} />
                         </div>
                         <div className="user-details">
                             <span className="username">{user?.name ?? 'Fire Analyst'}</span>
-                            <span className="user-email">{user?.email ?? 'admin@geofirenet.com'}</span>
+                            <span className="user-email">{user?.role ?? user?.email ?? 'Operator'}</span>
                         </div>
                         <ChevronDown size={16} className={`dropdown-icon ${isDropdownOpen ? 'open' : ''}`} />
-                    </div>
+                    </button>
 
                     {isDropdownOpen && (
                         <div className="profile-dropdown-menu">

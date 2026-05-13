@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
-import type { HistoryItem } from '../../types/prediction';
-import { fetchJson } from '../../config/api';
+import { RiskService, type HistoryRecord } from '../../services/RiskService';
 
 const PredictionHistory: React.FC = () => {
-    const [history, setHistory] = useState<HistoryItem[]>([]);
+    const [history, setHistory] = useState<HistoryRecord[]>([]);
     const [loading, setLoading] = useState(true);
 
     const loadHistory = async () => {
         try {
-            const data = await fetchJson<HistoryItem[]>('/history?limit=5');
+            const data = await RiskService.getHistory(undefined, 5);
             setHistory(data);
         } catch (e) {
             console.error("Failed fetching history for Predictions Page", e);
@@ -22,7 +21,7 @@ const PredictionHistory: React.FC = () => {
         // Optimistic UI Update: immediately remove from view
         setHistory(prev => prev.filter(item => item.id !== id));
         try {
-            await fetchJson(`/history/${id}`, { method: 'DELETE' });
+            await RiskService.deleteHistoryRecord(Number(id));
         } catch (e) {
             console.error("Failed to delete history item on the server", e);
             // Optionally could re-fetch history here on failure to restore state
@@ -42,7 +41,7 @@ const PredictionHistory: React.FC = () => {
 
     return (
         <div className="card mt-4 history-table-card">
-            <h3 className="section-title">Recent Inference Logs</h3>
+            <h3 className="section-title">Recent Risk Checks</h3>
             <div className="table-responsive">
                 <table className="compact-table">
                     <thead>
@@ -52,6 +51,7 @@ const PredictionHistory: React.FC = () => {
                             <th>Metrics Input</th>
                             <th>Risk Tier</th>
                             <th>Primary Driver</th>
+                            <th>Source</th>
                             <th style={{ width: '60px' }}>Actions</th>
                         </tr>
                     </thead>
@@ -62,7 +62,7 @@ const PredictionHistory: React.FC = () => {
                                 <td>
                                     {item.location
                                         ? `${item.location.admin_region || item.location.name}, ${item.location.country}`.replace(/^, | ,/g, '')
-                                        : 'Global Simulation'}
+                                        : 'Project Area'}
                                 </td>
                                 <td className="text-muted small">
                                     {item.weather_input?.temp}°C | {item.weather_input?.wind}kph
@@ -73,18 +73,23 @@ const PredictionHistory: React.FC = () => {
                                     </span>
                                 </td>
                                 <td className="text-muted small limit-text">{item.primary_drivers || 'N/A'}</td>
+                                <td className="text-muted small">
+                                    {item.source === 'reference' ? 'Reference' : item.source === 'local' ? 'Local' : 'Database'}
+                                </td>
                                 <td>
-                                    <button 
-                                        onClick={() => handleDelete(item.id)}
-                                        style={{ 
-                                            background: 'none', border: '1px solid rgba(239, 68, 68, 0.3)', 
-                                            color: 'var(--accent-risk-extreme)', padding: '0.2rem 0.4rem', 
-                                            borderRadius: '4px', cursor: 'pointer' 
-                                        }}
-                                        title="Delete Record"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    {item.source !== 'reference' && (
+                                        <button
+                                            onClick={() => handleDelete(item.id)}
+                                            style={{
+                                                background: 'none', border: '1px solid rgba(239, 68, 68, 0.3)',
+                                                color: 'var(--accent-risk-extreme)', padding: '0.2rem 0.4rem',
+                                                borderRadius: '4px', cursor: 'pointer'
+                                            }}
+                                            title="Delete Record"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         ))}

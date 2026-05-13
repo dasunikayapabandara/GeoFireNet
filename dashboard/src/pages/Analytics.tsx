@@ -165,7 +165,7 @@ const Analytics: React.FC = () => {
             .slice(0, 4);
     }, [history]);
 
-    if (loading) return <div className="analytics-container flex-center"><h3>Loading Neural Intelligence...</h3></div>;
+    if (loading) return <div className="analytics-container flex-center"><h3>Loading analytics...</h3></div>;
     if (error) return <div className="analytics-container flex-center"><div className="settings-alert error">{error}</div></div>;
 
     return (
@@ -173,7 +173,7 @@ const Analytics: React.FC = () => {
             <div className="analytics-header">
                 <div className="analytics-title">
                     <h1><Activity size={32} color="var(--accent-primary)" /> Risk Analytics</h1>
-                    <p>Live backend-driven intelligence for predictive and active fire risk monitoring.</p>
+                    <p>Live backend data for projected and active fire risk monitoring.</p>
                 </div>
 
                 <div className="filters-bar">

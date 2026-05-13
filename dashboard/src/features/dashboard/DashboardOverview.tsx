@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import RiskCard from './RiskCard';
 import RiskChart from './RiskChart';
 import MapComponent from '../map/MapComponent';
-import { AlertCircle, RefreshCw, Activity, Map } from 'lucide-react';
+import { AlertCircle, RefreshCw, Activity, Map, RadioTower, ShieldAlert } from 'lucide-react';
 import { RiskService, type RiskMetric, type Alert, type RiskChartData } from '../../services/RiskService';
 import { API_BASE_URL, checkBackendStatus } from '../../config/api';
 import '../../styles/DashboardOverview.css';
@@ -79,44 +79,54 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
 
     if (loading && metrics.length === 0) {
         return <div className="dashboard-container flex-center">
-            <h3>Initializing Global Terminal...</h3>
+            <div className="dashboard-loading">
+                <RefreshCw size={22} className="animate-spin" />
+                <h3>Loading dashboard...</h3>
+                <p>Checking the latest risk signals for the project area.</p>
+            </div>
         </div>;
     }
 
     return (
         <div className="dashboard-container">
-            <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                <div>
-                    <h2>GeoFireNet Global Terminal</h2>
-                    <span className="last-updated">
-                        {viewMode === 'predictive' 
-                            ? 'Future simulation: AI-driven predictive risk intelligence.' 
-                            : 'Live monitoring: Confirmed active thermal satellite detections.'}
-                        {lastRefreshed ? ` Last refreshed ${lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.` : ''}
-                    </span>
+            <div className="dashboard-header">
+                <div className="dashboard-title-block">
+                    <span className="eyebrow">Wildfire Operations</span>
+                    <h2>Risk Overview</h2>
+                    <p className="last-updated">
+                        {viewMode === 'predictive'
+                            ? 'Projected risk based on current environmental inputs.'
+                            : 'Confirmed active thermal detections from the monitoring layer.'}
+                        {lastRefreshed ? ` Updated ${lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.` : ''}
+                    </p>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    <button className="btn btn-ghost" onClick={() => void fetchData()} title="Refresh Data" disabled={loading}>
+                <div className="dashboard-controls">
+                    <button className="btn btn-ghost icon-action" onClick={() => void fetchData()} title="Refresh data" disabled={loading}>
                         <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
                     </button>
-                    <div style={{ background: 'var(--bg-secondary)', padding: '0.5rem', borderRadius: '0.375rem', display: 'flex', gap: '0.5rem' }}>
+                    <div className="segmented-control" aria-label="Risk view mode">
                         <button
                             className={`btn ${viewMode === 'predictive' ? 'btn-primary' : 'btn-ghost'}`}
                             onClick={() => setViewMode('predictive')}
-                        >Predictive Risk</button>
+                        >
+                            <ShieldAlert size={16} />
+                            Risk Forecast
+                        </button>
                         <button
-                            className={`btn ${viewMode === 'active' ? 'btn-primary' : 'btn-ghost'}`}
+                            className={`btn ${viewMode === 'active' ? 'btn-danger-mode' : 'btn-ghost'}`}
                             onClick={() => setViewMode('active')}
-                        style={{ background: viewMode === 'active' ? 'var(--accent-risk-extreme)' : 'transparent' }}
-                    >Active Detections</button>
+                        >
+                            <RadioTower size={16} />
+                            Active Detections
+                        </button>
                     </div>
                     <select
-                        title="Global Region Filter"
+                        className="region-select"
+                        title="Region filter"
                         value={countryFilter}
                         onChange={(e) => setCountryFilter(e.target.value)}
-                        style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '0.375rem' }}
                     >
-                        <option value="">Project Scope (USA + Australia)</option>
+                        <option value="">USA + Australia</option>
                         <option value="USA">United States</option>
                         <option value="Australia">Australia</option>
                     </select>
@@ -124,16 +134,16 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
             </div>
 
             {error && (
-                <div className="settings-alert error" style={{ marginBottom: '2rem', alignItems: 'flex-start' }}>
+                <div className="settings-alert error dashboard-error">
                     <AlertCircle size={20} />
                     <div>
                         <strong>{error.message}</strong>
-                        <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem' }}>
+                        <ul>
                             {error.details.map(detail => (
                                 <li key={detail}>{detail}</li>
                             ))}
                         </ul>
-                        <button className="btn btn-outline" onClick={fetchData} style={{ marginTop: '0.75rem' }}>
+                        <button className="btn btn-outline" onClick={fetchData}>
                             Retry Connection
                         </button>
                     </div>
@@ -179,9 +189,9 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
                             </h3>
                         </div>
                         {chartData?.labels.length === 0 ? (
-                            <div className="empty-state-placeholder" style={{ height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: 'var(--text-secondary)' }}>
-                                <Activity size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                                <p>No prediction history available for trend analysis yet.</p>
+                            <div className="empty-state-placeholder">
+                                <Activity size={42} />
+                                <p>No risk history is available for this view yet.</p>
                             </div>
                         ) : (
                             <RiskChart data={chartData} />
@@ -195,8 +205,8 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onOpenLiveMap }) 
                     </div>
                     <ul className="alerts-list">
                         {alerts.length === 0 ? (
-                            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                                <AlertCircle size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
+                            <div className="empty-alerts">
+                                <AlertCircle size={32} />
                                 <p>No active alerts detected.</p>
                             </div>
                         ) : (

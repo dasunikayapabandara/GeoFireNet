@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Clock } from 'lucide-react';
 import { RiskService, type HistoryRecord } from '../services/RiskService';
 
+const historySourceLabel = (source?: HistoryRecord['source']) => {
+    if (source === 'local') return 'Local';
+    if (source === 'reference') return 'Reference';
+    return 'Database';
+};
+
 const History: React.FC = () => {
     const [history, setHistory] = useState<HistoryRecord[]>([]);
     const [loading, setLoading] = useState(true);
@@ -23,14 +29,14 @@ const History: React.FC = () => {
         return () => clearInterval(intervalId);
     }, []);
 
-    if (loading && history.length === 0) return <div className="p-6"><h3>Syncing with Prediction Registry...</h3></div>;
+    if (loading && history.length === 0) return <div className="p-6"><h3>Loading risk history...</h3></div>;
 
     return (
         <div className="p-6">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                     <h2>Historical Log</h2>
-                    <p className="text-muted">A tabular log of predictions returned by the active RandomForestClassifier pipeline.</p>
+                    <p className="text-muted">A tabular log of recent risk checks, local fallback records, and reference risk snapshots.</p>
                 </div>
                 {loading && <div className="animate-spin text-muted"><Clock size={20} /></div>}
             </div>
@@ -50,6 +56,7 @@ const History: React.FC = () => {
                                 <th style={{ padding: '1rem 0.5rem' }}>Risk Level</th>
                                 <th style={{ padding: '1rem 0.5rem' }}>Probability</th>
                                 <th style={{ padding: '1rem 0.5rem' }}>Primary Drivers</th>
+                                <th style={{ padding: '1rem 0.5rem' }}>Source</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -71,6 +78,7 @@ const History: React.FC = () => {
                                     </td>
                                     <td style={{ padding: '1rem 0.5rem' }}>{(log.risk_probability * 100).toFixed(1)}%</td>
                                     <td style={{ padding: '1rem 0.5rem', color: '#94a3b8', fontSize: '0.9rem' }}>{log.primary_drivers || 'None'}</td>
+                                    <td style={{ padding: '1rem 0.5rem', color: '#94a3b8', fontSize: '0.9rem' }}>{historySourceLabel(log.source)}</td>
                                 </tr>
                             ))}
                         </tbody>

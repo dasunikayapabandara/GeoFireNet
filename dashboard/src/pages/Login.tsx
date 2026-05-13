@@ -98,7 +98,7 @@ const Login: React.FC = () => {
     };
 
     const submitLabel = mode === 'login'
-        ? 'Secure Login'
+        ? 'Sign In'
         : mode === 'first-user'
             ? 'Create First User'
             : 'Reset Password';
@@ -111,12 +111,12 @@ const Login: React.FC = () => {
                         <Flame size={48} color="#f97316" />
                     </div>
                     <h1>GeoFireNet</h1>
-                    <p className="subtitle">Predictive Wildfire Risk System</p>
+                    <p className="subtitle">Wildfire Risk Monitoring</p>
                 </div>
 
                 <form className="login-form" onSubmit={handleSubmit}>
                     <p className="form-instructions">
-                        {mode === 'login' && 'Sign in to access the wildfire risk monitoring dashboard'}
+                        {mode === 'login' && 'Sign in to open the operations dashboard'}
                         {mode === 'first-user' && 'Create the first operator account for this browser'}
                         {mode === 'forgot' && 'Reset the password for an existing account'}
                     </p>
@@ -247,7 +247,7 @@ const Login: React.FC = () => {
                 )}
 
                 <div className="login-footer">
-                    <p>Operators can sign in above. Community users can open the public portal.</p>
+                    <p>Operators can sign in above. Community users can continue with read-only access.</p>
                 </div>
             </div>
         </div>
