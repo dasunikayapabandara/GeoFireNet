@@ -13,3 +13,4 @@ psycopg2-binary
 python-dotenv
 pydantic-settings
 websockets
+httpx
